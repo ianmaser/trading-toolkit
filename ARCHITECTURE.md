@@ -34,28 +34,28 @@ React Component (renders data, loading skeleton, or error state)
 
 ### Cache TTLs
 
-| Data type             | TTL   | Key pattern                           |
-|-----------------------|-------|---------------------------------------|
-| Quote (price/vol)     | 60s   | `quote:{symbol}`                      |
-| Intraday candles      | 5min  | `candles:{symbol}:{timeframe}:{date}` |
-| Daily candles         | 24h   | `candles:{symbol}:1D:{date}`          |
-| Ticker search         | 24h   | `search:{query}`                      |
-| Institutional data    | 15min | `institutional:{symbol}`              |
-| Daily brief           | 24h   | `brief:{YYYY-MM-DD}`                  |
-| Coaching report       | 24h   | `coaching:{userId}:{YYYY-MM-DD}`      |
+| Data type          | TTL   | Key pattern                           |
+| ------------------ | ----- | ------------------------------------- |
+| Quote (price/vol)  | 60s   | `quote:{symbol}`                      |
+| Intraday candles   | 5min  | `candles:{symbol}:{timeframe}:{date}` |
+| Daily candles      | 24h   | `candles:{symbol}:1D:{date}`          |
+| Ticker search      | 24h   | `search:{query}`                      |
+| Institutional data | 15min | `institutional:{symbol}`              |
+| Daily brief        | 24h   | `brief:{YYYY-MM-DD}`                  |
+| Coaching report    | 24h   | `coaching:{userId}:{YYYY-MM-DD}`      |
 
 ### API Route → Service Map
 
-| Route                          | Calls                        | Cache |
-|--------------------------------|------------------------------|-------|
-| `/api/market/candles`          | Polygon → Twelve Data               | yes   |
-| `/api/market/quote`            | Polygon → Twelve Data               | yes   |
-| `/api/market/search`           | Polygon → Twelve Data               | yes   |
-| `/api/institutional/[symbol]`  | Unusual Whales → Tradier (fallback) | yes   |
-| `/api/signals/[symbol]`        | Python `/indicators` → score        | no    |
-| `/api/backtest`                | Python `/backtest`                  | no    |
-| `/api/chat`                    | Anthropic (streaming)               | no    |
-| `/api/coaching-report`         | Anthropic (non-streaming)           | yes   |
+| Route                         | Calls                               | Cache |
+| ----------------------------- | ----------------------------------- | ----- |
+| `/api/market/candles`         | Polygon → Twelve Data               | yes   |
+| `/api/market/quote`           | Polygon → Twelve Data               | yes   |
+| `/api/market/search`          | Polygon → Twelve Data               | yes   |
+| `/api/institutional/[symbol]` | Unusual Whales → Tradier (fallback) | yes   |
+| `/api/signals/[symbol]`       | Python `/indicators` → score        | no    |
+| `/api/backtest`               | Python `/backtest`                  | no    |
+| `/api/chat`                   | Anthropic (streaming)               | no    |
+| `/api/coaching-report`        | Anthropic (non-streaming)           | yes   |
 
 ---
 
@@ -63,21 +63,21 @@ React Component (renders data, loading skeleton, or error state)
 
 All AI and signal routes are rate-limited per authenticated user via `lib/rateLimit.ts` using `@upstash/ratelimit` with a sliding window algorithm backed by Upstash Redis.
 
-| Route                   | Limit             | Redis prefix  | 429 message                                                      |
-|-------------------------|-------------------|---------------|------------------------------------------------------------------|
-| `/api/chat`             | 20 req / user / h | `rl:chat`     | "You've reached your limit of 20 AI requests per hour. BULL-E needs a breather — try again in X minutes." |
-| `/api/signals/[symbol]` | 60 req / user / h | `rl:signals`  | "You've reached your limit of 60 signal requests per hour. Try again in X minutes."                       |
+| Route                   | Limit             | Redis prefix | 429 message                                                                                               |
+| ----------------------- | ----------------- | ------------ | --------------------------------------------------------------------------------------------------------- |
+| `/api/chat`             | 20 req / user / h | `rl:chat`    | "You've reached your limit of 20 AI requests per hour. BULL-E needs a breather — try again in X minutes." |
+| `/api/signals/[symbol]` | 60 req / user / h | `rl:signals` | "You've reached your limit of 60 signal requests per hour. Try again in X minutes."                       |
 
 ### Implementation pattern
 
 Every rate-limited route follows this pattern before doing any work:
 
 ```ts
-const { userId } = await getAuthenticatedUser(request) // throws 401 if no session
+const { userId } = await getAuthenticatedUser(request); // throws 401 if no session
 
-const limit = await checkChatRateLimit(userId)         // or checkSignalsRateLimit
+const limit = await checkChatRateLimit(userId); // or checkSignalsRateLimit
 if (!limit.allowed) {
-  return Response.json({ error: limit.message }, { status: 429 })
+  return Response.json({ error: limit.message }, { status: 429 });
 }
 
 // ... proceed with actual route logic
@@ -115,50 +115,50 @@ getInstitutionalData(symbol)
 
 ```ts
 interface UnusualOptionsFlow {
-  symbol:       string
-  expiry:       string        // 'YYYY-MM-DD'
-  strike:       number
-  type:         'call' | 'put'
-  volume:       number
-  openInterest: number
-  volumeRatio:  number        // volume / openInterest
-  premiumUsd:   number        // total premium in dollars
-  timestamp:    string        // ISO 8601
+  symbol: string;
+  expiry: string; // 'YYYY-MM-DD'
+  strike: number;
+  type: "call" | "put";
+  volume: number;
+  openInterest: number;
+  volumeRatio: number; // volume / openInterest
+  premiumUsd: number; // total premium in dollars
+  timestamp: string; // ISO 8601
 }
 
 interface ShortInterest {
-  symbol:              string
-  shortFloat:          number  // e.g. 0.042 = 4.2%
-  shortFloatPrevWeek:  number
-  changeVsPrevWeek:    number  // signed delta
-  updatedAt:           string
+  symbol: string;
+  shortFloat: number; // e.g. 0.042 = 4.2%
+  shortFloatPrevWeek: number;
+  changeVsPrevWeek: number; // signed delta
+  updatedAt: string;
 }
 
 interface DarkPoolPrint {
-  symbol:      string
-  price:       number
-  size:        number          // shares
-  notionalUsd: number
-  timestamp:   string
-  exchange:    string
+  symbol: string;
+  price: number;
+  size: number; // shares
+  notionalUsd: number;
+  timestamp: string;
+  exchange: string;
 }
 
 interface InstitutionalData {
-  unusualOptions: UnusualOptionsFlow[] | null
-  shortInterest:  ShortInterest | null
-  darkPool:       DarkPoolPrint[] | null
+  unusualOptions: UnusualOptionsFlow[] | null;
+  shortInterest: ShortInterest | null;
+  darkPool: DarkPoolPrint[] | null;
 }
 ```
 
 ### Catalyst strip rendering rules
 
-| Field               | Data present                          | Data null / empty      |
-|---------------------|---------------------------------------|------------------------|
-| Options flow        | Bullish/bearish badges with premium $ | Muted `—`              |
-| Short interest      | % float + △ vs last week arrow        | Muted `—`              |
-| Dark pool           | Print count + total notional          | Muted `—`              |
-| Earnings date       | Date chip (from Polygon)              | Hidden                 |
-| Deep Analysis btn   | Always shown — opens BULL-E with full institutional context pre-loaded |
+| Field             | Data present                                                           | Data null / empty |
+| ----------------- | ---------------------------------------------------------------------- | ----------------- |
+| Options flow      | Bullish/bearish badges with premium $                                  | Muted `—`         |
+| Short interest    | % float + △ vs last week arrow                                         | Muted `—`         |
+| Dark pool         | Print count + total notional                                           | Muted `—`         |
+| Earnings date     | Date chip (from Polygon)                                               | Hidden            |
+| Deep Analysis btn | Always shown — opens BULL-E with full institutional context pre-loaded |
 
 ---
 
@@ -173,6 +173,7 @@ All requests/responses are `application/json`. All errors return `{ detail: stri
 ### GET /health
 
 **Response**
+
 ```json
 {
   "status": "ok",
@@ -188,32 +189,43 @@ Single source of truth for all indicator math. Used by the live signal engine.
 Both this endpoint and `/backtest` share the same internal pandas-ta calculation function — no indicator is ever computed twice in different ways.
 
 **Request**
+
 ```json
 {
   "candles": [
     {
       "timestamp": 1700000000,
-      "open": 184.50,
-      "high": 186.20,
-      "low": 183.10,
-      "close": 185.80,
+      "open": 184.5,
+      "high": 186.2,
+      "low": 183.1,
+      "close": 185.8,
       "volume": 42000000
     }
   ],
-  "indicators": ["RSI", "MACD", "EMA_20", "EMA_50", "EMA_200", "BB_WIDTH", "ATR", "VOLUME_RATIO"]
+  "indicators": [
+    "RSI",
+    "MACD",
+    "EMA_20",
+    "EMA_50",
+    "EMA_200",
+    "BB_WIDTH",
+    "ATR",
+    "VOLUME_RATIO"
+  ]
 }
 ```
 
 **Response**
+
 ```json
 {
   "rsi": 42.1,
   "macd": 0.34,
   "macd_signal": 0.21,
   "macd_hist": 0.13,
-  "ema_20": 185.40,
-  "ema_50": 182.10,
-  "ema_200": 175.60,
+  "ema_20": 185.4,
+  "ema_50": 182.1,
+  "ema_200": 175.6,
   "bb_width": 0.048,
   "atr": 3.82,
   "volume_ratio": 1.34
@@ -222,23 +234,24 @@ Both this endpoint and `/backtest` share the same internal pandas-ta calculation
 
 **Supported indicator names**
 
-| Name           | pandas-ta call           | Returns                                |
-|----------------|--------------------------|----------------------------------------|
-| `RSI`          | `ta.rsi(close, 14)`      | `rsi`                                  |
-| `MACD`         | `ta.macd(close)`         | `macd`, `macd_signal`, `macd_hist`     |
-| `EMA_20`       | `ta.ema(close, 20)`      | `ema_20`                               |
-| `EMA_50`       | `ta.ema(close, 50)`      | `ema_50`                               |
-| `EMA_200`      | `ta.ema(close, 200)`     | `ema_200`                              |
-| `BB_WIDTH`     | `ta.bbands(close)`       | `bb_width` (upper-lower / middle)      |
-| `ATR`          | `ta.atr(h, l, c, 14)`   | `atr`                                  |
-| `VOLUME_RATIO` | computed                 | `volume_ratio` (vol / 20-day avg vol)  |
-| `ADX`          | `ta.adx(h, l, c, 14)`   | `adx`, `dmp`, `dmn`                    |
+| Name           | pandas-ta call        | Returns                               |
+| -------------- | --------------------- | ------------------------------------- |
+| `RSI`          | `ta.rsi(close, 14)`   | `rsi`                                 |
+| `MACD`         | `ta.macd(close)`      | `macd`, `macd_signal`, `macd_hist`    |
+| `EMA_20`       | `ta.ema(close, 20)`   | `ema_20`                              |
+| `EMA_50`       | `ta.ema(close, 50)`   | `ema_50`                              |
+| `EMA_200`      | `ta.ema(close, 200)`  | `ema_200`                             |
+| `BB_WIDTH`     | `ta.bbands(close)`    | `bb_width` (upper-lower / middle)     |
+| `ATR`          | `ta.atr(h, l, c, 14)` | `atr`                                 |
+| `VOLUME_RATIO` | computed              | `volume_ratio` (vol / 20-day avg vol) |
+| `ADX`          | `ta.adx(h, l, c, 14)` | `adx`, `dmp`, `dmn`                   |
 
 ---
 
 ### POST /backtest
 
 **Request**
+
 ```json
 {
   "symbol": "NVDA",
@@ -258,6 +271,7 @@ Both this endpoint and `/backtest` share the same internal pandas-ta calculation
 ```
 
 **Response**
+
 ```json
 {
   "total_trades": 24,
@@ -270,16 +284,16 @@ Both this endpoint and `/backtest` share the same internal pandas-ta calculation
   "trades": [
     {
       "entry_index": 42,
-      "entry_price": 184.50,
-      "exit_price": 192.10,
+      "entry_price": 184.5,
+      "exit_price": 192.1,
       "outcome": "win",
       "r_multiple": 2.0
     }
   ],
   "regime_breakdown": {
-    "trending":  { "trades": 14, "win_rate": 0.71, "expectancy": 1.12 },
-    "ranging":   { "trades":  7, "win_rate": 0.57, "expectancy": 0.54 },
-    "volatile":  { "trades":  3, "win_rate": 0.33, "expectancy": -0.21 }
+    "trending": { "trades": 14, "win_rate": 0.71, "expectancy": 1.12 },
+    "ranging": { "trades": 7, "win_rate": 0.57, "expectancy": 0.54 },
+    "volatile": { "trades": 3, "win_rate": 0.33, "expectancy": -0.21 }
   }
 }
 ```
@@ -293,15 +307,15 @@ RLS is enabled on every table. The single governing principle:
 
 ### Policy summary
 
-| Table           | SELECT | INSERT | UPDATE | DELETE | Policy condition           |
-|-----------------|--------|--------|--------|--------|----------------------------|
-| `profiles`      | ✓      | ✓      | ✓      | —      | `auth.uid() = id`          |
-| `watchlist`     | ✓      | ✓      | —      | ✓      | `auth.uid() = user_id`     |
-| `playbooks`     | ✓      | ✓      | ✓      | ✓      | `auth.uid() = user_id`     |
-| `backtests`     | ✓      | ✓      | —      | ✓      | `auth.uid() = user_id`     |
-| `signals`       | ✓      | ✓      | —      | —      | `auth.uid() = user_id`     |
-| `journal_trades`| ✓      | ✓      | ✓      | ✓      | `auth.uid() = user_id`     |
-| `ticker_notes`  | ✓      | ✓      | ✓      | ✓      | `auth.uid() = user_id`     |
+| Table            | SELECT | INSERT | UPDATE | DELETE | Policy condition       |
+| ---------------- | ------ | ------ | ------ | ------ | ---------------------- |
+| `profiles`       | ✓      | ✓      | ✓      | —      | `auth.uid() = id`      |
+| `watchlist`      | ✓      | ✓      | —      | ✓      | `auth.uid() = user_id` |
+| `playbooks`      | ✓      | ✓      | ✓      | ✓      | `auth.uid() = user_id` |
+| `backtests`      | ✓      | ✓      | —      | ✓      | `auth.uid() = user_id` |
+| `signals`        | ✓      | ✓      | —      | —      | `auth.uid() = user_id` |
+| `journal_trades` | ✓      | ✓      | ✓      | ✓      | `auth.uid() = user_id` |
+| `ticker_notes`   | ✓      | ✓      | ✓      | ✓      | `auth.uid() = user_id` |
 
 ### Server-side queries (API routes)
 
@@ -443,10 +457,10 @@ Be direct. Never pad responses. Prioritize actionable insight.
 
 Non-streaming one-shot calls (pattern tooltips, signal summaries, backtest explanations) use a slimmer context — only the data directly relevant to that component is injected. They share the same `/api/chat` route but pass `stream: false` and a scoped `contextScope` parameter that limits which context buckets are assembled.
 
-| Call site                        | Context injected                              |
-|----------------------------------|-----------------------------------------------|
-| Signal card "Summarize Setup"    | signal + patterns + regime                    |
-| Backtest "Explain Results"       | backtest results + playbook config            |
-| Pattern tooltip "What is this?"  | single pattern object only                    |
-| Coaching report                  | last 30 trades + all playbook stats (no ticker)|
-| Daily brief                      | SPY/QQQ/VIX data + user's top playbook regime fit |
+| Call site                       | Context injected                                  |
+| ------------------------------- | ------------------------------------------------- |
+| Signal card "Summarize Setup"   | signal + patterns + regime                        |
+| Backtest "Explain Results"      | backtest results + playbook config                |
+| Pattern tooltip "What is this?" | single pattern object only                        |
+| Coaching report                 | last 30 trades + all playbook stats (no ticker)   |
+| Daily brief                     | SPY/QQQ/VIX data + user's top playbook regime fit |
