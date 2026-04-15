@@ -22,6 +22,25 @@ ARCHITECTURE.md now contains full technical architecture:
 market data flow + cache TTLs, Python service API contract (all endpoints + request/response shapes),
 Supabase RLS policy table, auth flow diagram, BULL-E context injection pipeline.
 
+## 6. Legal — Disclaimers, Terms of Service & Liability Coverage — OPEN
+
+The app must make clear it is for informational and educational purposes only, not financial advice.
+No responsibility for financial losses incurred by users acting on signals, BULL-E output, or any other app content.
+
+### Required before any public launch:
+- **Footer disclaimer** — visible on every page: *"For informational and educational purposes only. Not financial advice. You are solely responsible for your trading decisions."*
+- **Onboarding disclaimer** — shown on first login, requires explicit acknowledgement (checkbox) before accessing the app
+- **Terms of Service page** (`/terms`) — covering: no liability for losses, no investment advice, data accuracy not guaranteed, account termination rights, prohibited uses
+- **Privacy Policy page** (`/privacy`) — covering: what data is stored (journal trades, playbooks, chat history), how it is used, deletion rights
+- **BULL-E framing** — BULL-E must always be described as a "coach" or "analyst tool," never an "adviser." Avoid language like "you should buy" — prefer "the setup shows..." or "your playbook performs best when..."
+- **Signal card disclaimer** — small muted text on every signal card: *"Not a recommendation. Past signal performance does not guarantee future results."*
+
+### Consider:
+- Consulting a lawyer familiar with fintech/SaaS before launch — even a one-time review of the ToS is worth it
+- Whether to geo-restrict (some jurisdictions have stricter rules around financial tools)
+
+---
+
 ## 5. ~~Unusual Whales API Not in Build Plan~~ — RESOLVED
 Added as Prompt 8b (new prompt before Prompt 9) in Phase 3.
 services/institutionalData.ts: Unusual Whales (primary) → Tradier (fallback, options only).
