@@ -1,30 +1,30 @@
 # Revisit Later — Precautionary Notes
 
-## 1. yfinance Fallback
-yfinance scrapes Yahoo Finance and breaks without warning — it is not production-safe.
-Current plan: Polygon.io → yfinance fallback.
-Better plan: Polygon.io → a second paid provider (Alpaca, Tiingo, or Twelve Data).
-Fine to leave as yfinance during early prototyping, but swap before any real users touch it.
+## 1. ~~yfinance Fallback~~ — RESOLVED
+Replaced yfinance with Twelve Data as the secondary provider.
+Data stack: Polygon.io (primary) → Twelve Data (fallback).
+Updated in: PLAN.MD (Prompts 5 and 10), .env.local (TWELVE_DATA_API_KEY added).
 
-## 2. Python Microservice Deployment
-The backtest service lives in python-service/ but the plan doesn't define where it runs.
-Vercel does not natively run long-lived Python processes with heavy pandas/numpy workloads (cold starts are brutal).
-Options: Railway, Fly.io, or Render as a persistent service.
-Alternative: Rewrite as a Vercel serverless Python function if the workload stays light.
-Decide before building the Backtest Lab UI (Phase 4) so the API base URL is configured correctly from the start.
+## 2. ~~Python Microservice Deployment~~ — RESOLVED
+Python service deploys on Railway. railway.toml added to python-service/.
+All Next.js API routes read the base URL from process.env.PYTHON_SERVICE_URL (localhost:8000 in dev, Railway URL in production).
+Updated in: .env.local (PYTHON_SERVICE_URL), PLAN.MD (Prompt 10), python-service/railway.toml created.
 
-## 3. Dual Indicator Libraries — Signal Drift Risk
-The signal engine (Phase 5) uses the `technicalindicators` npm package (JavaScript).
-The backtest service (Phase 4) uses `pandas-ta` (Python).
-If their RSI, MACD, EMA, etc. calculations differ even slightly, live signals won't match backtest results — which breaks the core value proposition of the playbook system.
-Revisit: after both are built, run the same candle data through both and compare outputs. Fix any divergence before shipping.
+## 3. ~~Dual Indicator Libraries~~ — RESOLVED
+All indicator math is now centralized in the Python service (pandas-ta only).
+The Python /indicators endpoint accepts candle data + a list of indicators and returns calculated values.
+signalEngine.ts calls /indicators for live signals. The /backtest endpoint uses the same internal pandas-ta functions.
+No JavaScript indicator library is used anywhere. Live signals and backtests are mathematically identical by design.
+Updated in: PLAN.MD (Prompts 10 and 13).
 
-## 4. No Architecture Document
-ARCHITECTURE.md currently contains the product vision, not a technical architecture.
-Missing: data flow diagram, API boundary definitions, caching layer map, auth flow, Python↔Next.js proxy design.
-Not urgent now, but sketch it out before Phase 4 (Python service) and Phase 6 (BULL-E) when cross-service communication gets complex.
+## 4. ~~No Architecture Document~~ — RESOLVED
+ARCHITECTURE.md now contains full technical architecture:
+market data flow + cache TTLs, Python service API contract (all endpoints + request/response shapes),
+Supabase RLS policy table, auth flow diagram, BULL-E context injection pipeline.
 
-## 5. Unusual Whales API Not in Build Plan
-The product vision (PROJECT.md) calls for options flow, short interest, and dark pool volume via Unusual Whales in the catalyst strip.
-None of the 22 build prompts mention it.
-Revisit: add it to Phase 3, Prompt 9 (Full ticker page) before building the catalyst strip component, or it will need to be retrofitted later.
+## 5. ~~Unusual Whales API Not in Build Plan~~ — RESOLVED
+Added as Prompt 8b (new prompt before Prompt 9) in Phase 3.
+services/institutionalData.ts: Unusual Whales (primary) → Tradier (fallback, options only).
+Catalyst strip in Prompt 9 now explicitly consumes this service.
+Types defined in types/institutional.ts. Route: /api/institutional/[symbol] (15min Redis cache).
+Updated in: PLAN.MD (Prompt 8b + Prompt 9), .env.local (TRADIER_API_KEY added), ARCHITECTURE.md (Section 2).

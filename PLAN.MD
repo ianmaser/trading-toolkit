@@ -20,7 +20,7 @@ Phase 1 — Market Data Service (Day 2)
 Everything depends on this. Get it right before building any UI that needs data.
 Prompt 5 — Data service:
 
-"Create services/marketData.ts. It must export these functions: getCandles(symbol, timeframe, from, to) — fetches OHLCV data from Polygon.io, returns typed Candle[]. getQuote(symbol) — fetches latest price, change%, volume. getMultipleQuotes(symbols: string[]) — batch quote fetch for the watchlist. searchTickers(query) — searches for tickers by name or symbol. All functions should: check Upstash Redis cache first (TTL: 60s for quotes, 24h for daily candles, 5min for intraday), fall back to yfinance API if Polygon returns an error, throw typed errors that the UI can handle gracefully. Create types/market.ts with interfaces for Candle, Quote, TickerInfo, Timeframe."
+"Create services/marketData.ts. It must export these functions: getCandles(symbol, timeframe, from, to) — fetches OHLCV data from Polygon.io, returns typed Candle[]. getQuote(symbol) — fetches latest price, change%, volume. getMultipleQuotes(symbols: string[]) — batch quote fetch for the watchlist. searchTickers(query) — searches for tickers by name or symbol. All functions should: check Upstash Redis cache first (TTL: 60s for quotes, 24h for daily candles, 5min for intraday), fall back to Twelve Data API if Polygon returns an error, throw typed errors that the UI can handle gracefully. Create types/market.ts with interfaces for Candle, Quote, TickerInfo, Timeframe."
 
 Prompt 6 — Data hooks:
 
@@ -33,20 +33,38 @@ Prompt 7 — Watchlist page:
 "Build the watchlist page at app/dashboard/watchlist/page.tsx. It should: fetch the user's watchlist from Supabase, use useWatchlistQuotes to get live prices for all tickers, render a responsive grid of <TickerCard> components showing symbol, company name, price, change% (green/red), and volume. Add a search bar at the top that uses useTickerSearch and shows a dropdown of results — clicking one adds the ticker to the watchlist via a Supabase insert. Each card has a remove button and is clickable to navigate to /dashboard/ticker/[symbol]. Add a loading skeleton grid and an empty state with a prompt to add your first ticker."
 
 Phase 3 — Ticker View (Days 4–5)
-The core of the app. Build this in two prompts — chart first, then everything around it.
+The core of the app. Build this in three prompts — institutional data service first, then chart, then everything around it.
 Prompt 8 — Candlestick chart:
 
 "Build a <CandlestickChart> component at components/features/CandlestickChart.tsx using the lightweight-charts library. It should: render OHLCV candles from a Candle[] prop, support timeframe switching (1D, 4H, 1H, 15M, 5M) via a button group above the chart, auto-resize with a ResizeObserver, accept an annotations prop (array of {type: 'zone'|'line', priceMin, priceMax, timeStart, timeEnd, color, label}) and draw them as price zones or horizontal lines on the chart, expose a scrollToTime(timestamp) method via useImperativeHandle. Dark mode compatible. Loading skeleton while data fetches."
 
+Prompt 8b — Institutional data service:
+
+"Create services/institutionalData.ts. It must export a single function: getInstitutionalData(symbol: string) which returns a typed InstitutionalData object. The function should:
+
+Fetch from the Unusual Whales API (base URL from process.env.UNUSUAL_WHALES_API_KEY) to retrieve: (1) unusual options activity — large block trades and strikes with volume > 3x open interest, filtered to the last 5 trading days, returned as UnusualOptionsFlow[]. (2) short interest — current short interest as % of float and change vs the previous week, returned as ShortInterest. (3) dark pool prints — notable dark pool transactions above $1M notional in the last 5 trading days, returned as DarkPoolPrint[].
+
+If the Unusual Whales API returns an error or the key is not set, fall back to Tradier (process.env.TRADIER_API_KEY) for options flow only — short interest and dark pool fields should return null in this case and the UI should handle gracefully.
+
+Create types/institutional.ts with interfaces for: UnusualOptionsFlow (symbol, expiry, strike, type call/put, volume, openInterest, volumeRatio, premiumUsd, timestamp), ShortInterest (symbol, shortFloat, shortFloatPrevWeek, changeVsPrevWeek, updatedAt), DarkPoolPrint (symbol, price, size, notionalUsd, timestamp, exchange), InstitutionalData (unusualOptions, shortInterest, darkPool).
+
+Add a /api/institutional/[symbol] Next.js route that calls this service, checks Upstash Redis (TTL 15min), and returns the data. Read PYTHON_SERVICE_URL from env — do not hardcode."
+
 Prompt 9 — Full ticker page:
 
-"Build the ticker detail page at app/dashboard/ticker/[symbol]/page.tsx. Compose it from these sections: (1) Top bar — symbol, company name, price, change%, upcoming earnings date if available. (2) <CandlestickChart> taking up ~55% of the page width. (3) Multi-timeframe confluence panel to the right of the chart — show the same ticker on Daily, 4H, and 1H as three small <MiniChart> components, each with a trend indicator (up/down/neutral arrow) and a composite confluence score badge. (4) Signal card below the chart — direction badge, edge score progress bar, stop/target levels, expected move %, confidence %, and reasoning bullets that switch between plain-English and technical language based on the user's language_mode preference. (5) Risk calculator panel — input for shares or dollar risk, auto-calculates the other based on account_size from user profile and the signal's stop level. (6) Pattern sidebar on the right — list of detected patterns with confidence scores, click to scroll chart to that zone. (7) Catalyst strip at the very top — thin bar with news headlines, earnings date, and a 'Deep Analysis' button. Build the layout and wire up the chart and data. We'll connect signals and patterns in the next phases."
+"Build the ticker detail page at app/dashboard/ticker/[symbol]/page.tsx. Compose it from these sections: (1) Top bar — symbol, company name, price, change%, upcoming earnings date if available. (2) <CandlestickChart> taking up ~55% of the page width. (3) Multi-timeframe confluence panel to the right of the chart — show the same ticker on Daily, 4H, and 1H as three small <MiniChart> components, each with a trend indicator (up/down/neutral arrow) and a composite confluence score badge. (4) Signal card below the chart — direction badge, edge score progress bar, stop/target levels, expected move %, confidence %, and reasoning bullets that switch between plain-English and technical language based on the user's language_mode preference. (5) Risk calculator panel — input for shares or dollar risk, auto-calculates the other based on account_size from user profile and the signal's stop level. (6) Pattern sidebar on the right — list of detected patterns with confidence scores, click to scroll chart to that zone. (7) Catalyst strip at the very top — a thin bar consuming data from services/institutionalData.ts via /api/institutional/[symbol]. It should show: unusual options flow badges (bullish/bearish call/put blocks with premium size), short interest % and week-over-week change arrow, dark pool print count and total notional, upcoming earnings date, and a 'Deep Analysis' button that opens BULL-E with the full institutional context pre-loaded. Show a compact skeleton while loading. If institutionalData returns null for a field, show a muted '—' rather than an error. Build the layout and wire up the chart and institutional data. We'll connect signals and patterns in the next phases."
 
 Phase 4 — Python Backtest Service (Days 6–7)
 Separate service. Do this entirely in the python-service/ folder.
 Prompt 10 — Python service:
 
-"Set up a Python FastAPI service in the python-service/ directory. Create: main.py with a FastAPI app, requirements.txt with: fastapi, uvicorn, pandas, pandas-ta, numpy, yfinance, pydantic. Create a POST endpoint at /backtest that accepts: symbol, timeframe, date_from, date_to, strategy_config (a JSON object with: conditions array, take_profit_r float, stop_loss_r float). The endpoint should: fetch OHLCV data using yfinance, calculate all indicators in the conditions using pandas-ta (RSI, MACD, EMA, SMA, Bollinger Bands, ATR), walk forward through the candles and simulate trades based on the conditions, track each trade (entry candle index, entry price, exit price, outcome, R-multiple), return a JSON result with: total_trades, win_rate, expectancy, profit_factor, max_drawdown, avg_rr, equity_curve (array of cumulative R values), trades (array of individual trade details), regime_breakdown (same stats split by trending/ranging/volatile regime detected via ADX). Add a GET /health endpoint. Add CORS for localhost and the Vercel domain."
+"Set up a Python FastAPI service in the python-service/ directory. Create: main.py with a FastAPI app, requirements.txt with: fastapi, uvicorn, pandas, pandas-ta, numpy, twelvedata, pydantic.
+
+Create a POST endpoint at /indicators that accepts: candles (array of OHLCV objects with timestamp, open, high, low, close, volume) and indicators (array of indicator names to calculate, e.g. ['RSI', 'MACD', 'EMA_20', 'EMA_50', 'EMA_200', 'BB_WIDTH', 'ATR', 'VOLUME_RATIO']). The endpoint should: load the candles into a pandas DataFrame, run each requested indicator through pandas-ta, return the most recent calculated values as a flat JSON object (e.g. {rsi: 42.1, macd: 0.34, macd_signal: 0.21, ema_20: 185.4, ...}). This is the single source of truth for all indicator math — both live signals and backtests use this endpoint.
+
+Create a POST endpoint at /backtest that accepts: symbol, timeframe, date_from, date_to, strategy_config (a JSON object with: conditions array, take_profit_r float, stop_loss_r float). The endpoint should: fetch OHLCV data using Twelve Data (primary) with Polygon.io as fallback, calculate all required indicators via the same pandas-ta logic used in /indicators (shared internal function, not a self-call), walk forward through the candles and simulate trades based on the conditions, track each trade (entry candle index, entry price, exit price, outcome, R-multiple), return a JSON result with: total_trades, win_rate, expectancy, profit_factor, max_drawdown, avg_rr, equity_curve (array of cumulative R values), trades (array of individual trade details), regime_breakdown (same stats split by trending/ranging/volatile regime detected via ADX).
+
+Add a GET /health endpoint. Add CORS for localhost and the Vercel domain. Add a railway.toml to python-service/ so it deploys on Railway (start command: uvicorn main:app --host 0.0.0.0 --port $PORT). All Next.js API routes that proxy to this service must read the base URL from process.env.PYTHON_SERVICE_URL — never hardcode it."
 
 Prompt 11 — Strategy parser:
 
@@ -59,7 +77,21 @@ Prompt 12 — Backtest Lab page:
 Phase 5 — Signal Engine (Days 8–9)
 Prompt 13 — Signal engine:
 
-"Create services/signalEngine.ts. It should export generateSignal(symbol, candles, userLanguageMode) which: calculates RSI, MACD, EMA 20/50/200, Bollinger Band width, ATR, and volume ratio vs 20-day average using the technicalindicators npm package, scores each factor on a -1 to +1 scale, combines them into a weighted composite edge score 0-100, determines direction (long/short/neutral) and regime (trending/ranging/volatile), generates stop level (ATR-based below/above recent swing), target level (2R from entry by default), calculates expected move % based on ATR, generates reasoning as an array of plain-English strings and separately as technical strings, returns a typed Signal object. Add a /api/signals/[symbol] route that calls this and saves the result to the Supabase signals table."
+"Create services/signalEngine.ts. It should export generateSignal(symbol, candles, userLanguageMode) which:
+
+1. Posts the candle array to the Python service's /indicators endpoint (via process.env.PYTHON_SERVICE_URL) requesting: RSI, MACD, EMA_20, EMA_50, EMA_200, BB_WIDTH, ATR, VOLUME_RATIO. This is the only place indicator math happens — do not calculate indicators in TypeScript.
+
+2. Takes the returned indicator values and scores each factor on a -1 to +1 scale: RSI (<30 = +1, >70 = -1, else scaled), MACD (signal cross direction and magnitude), EMA stack (price vs 20/50/200 alignment), BB width (contraction = ranging, expansion = breakout), ATR (volatility regime), volume ratio (>1.5 = confirmation, <0.8 = weak).
+
+3. Combines scores into a weighted composite edge score 0–100, determines direction (long/short/neutral) and regime (trending/ranging/volatile).
+
+4. Generates stop level (ATR-based below/above recent swing low/high from the candles array), target level (2R from entry by default), expected move % (ATR / current price * 100).
+
+5. Generates reasoning as two arrays: plainEnglish (e.g. 'RSI is oversold at 28, suggesting buyers may step in') and technical (e.g. 'RSI(14) = 28.3, below oversold threshold').
+
+6. Returns a typed Signal object matching types/market.ts.
+
+Do not install or import any JavaScript indicator library — all indicator math lives in the Python service. Add a /api/signals/[symbol] route that calls generateSignal and saves the result to the Supabase signals table. The route must call checkSignalsRateLimit(userId) from lib/rateLimit.ts before doing any work — if the limit is exceeded, return a 429 with the message from the result. Limit: 60 signal requests per user per hour."
 
 Prompt 14 — Pattern detector:
 
@@ -68,7 +100,7 @@ Prompt 14 — Pattern detector:
 Phase 6 — BULL-E (Days 10–11)
 Prompt 15 — BULL-E chat:
 
-"Build the BULL-E chat drawer at components/features/BullEChat.tsx. It's a sliding panel that opens from the bottom right. Use the Vercel AI SDK useChat hook connected to /api/chat. Build the /api/chat route using the Anthropic provider with claude-sonnet-4-20250514, streaming enabled, web search tool enabled. The system prompt should: position BULL-E as a professional trading analyst and coach, inject the user's current context on every request (currently viewed ticker, its latest signal, detected patterns, user's language_mode preference, their account_size, their last 5 journal trades, their best performing playbook stats). The system prompt should adapt language based on language_mode — plain English or technical. Show a typing indicator during streaming. Persist chat history in localStorage per ticker session. Add a 'Clear chat' button."
+"Build the BULL-E chat drawer at components/features/BullEChat.tsx. It's a sliding panel that opens from the bottom right. Use the Vercel AI SDK useChat hook connected to /api/chat. Build the /api/chat route using the Anthropic provider with claude-sonnet-4-20250514, streaming enabled, web search tool enabled. The /api/chat route must call checkChatRateLimit(userId) from lib/rateLimit.ts before streaming — if the limit is exceeded, return a 429 JSON response with the message from the result. Limit: 20 AI requests per user per hour. The system prompt should: position BULL-E as a professional trading analyst and coach, inject the user's current context on every request (currently viewed ticker, its latest signal, detected patterns, user's language_mode preference, their account_size, their last 5 journal trades, their best performing playbook stats). The system prompt should adapt language based on language_mode — plain English or technical. Show a typing indicator during streaming. Persist chat history in localStorage per ticker session. Add a 'Clear chat' button. In BullEChat.tsx, handle the 429 response from useChat's onError callback: when the error message contains the rate limit text, replace the chat input area with a friendly 'BULL-E needs a breather 🐂' state showing the retry-after time and a disabled input. Dismiss automatically when the time elapses."
 
 Prompt 16 — Inline AI commentary:
 
