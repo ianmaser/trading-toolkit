@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EDGE — Standard Developer Procedures</title>
+<title>AI Trading Toolkit — Standard Developer Procedures</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
@@ -30,10 +29,12 @@
     --blue-bg: #eff6ff;
     --blue-bd: #bfdbfe;
     --accent:  #6366f1;
+    --purple-bg: #f5f3ff;
+    --purple-bd: #ddd6fe;
+    --purple:    #7c3aed;
   }
 
   html { font-size: 10.5pt; }
-
   body {
     font-family: 'Inter', -apple-system, sans-serif;
     color: var(--navy);
@@ -41,7 +42,7 @@
     line-height: 1.65;
   }
 
-  /* ─── COVER PAGE ─────────────────────────────────────────── */
+  /* ── COVER ───────────────────────────────────────────────── */
   .cover {
     height: 100vh;
     background: var(--navy);
@@ -54,505 +55,187 @@
     position: relative;
     overflow: hidden;
   }
-
   .cover::before {
     content: '';
-    position: absolute;
-    top: -120px; right: -120px;
-    width: 480px; height: 480px;
-    border-radius: 50%;
+    position: absolute; top: -120px; right: -120px;
+    width: 480px; height: 480px; border-radius: 50%;
     background: radial-gradient(circle, rgba(99,102,241,0.25) 0%, transparent 70%);
   }
-
   .cover::after {
     content: '';
-    position: absolute;
-    bottom: -80px; left: 200px;
-    width: 320px; height: 320px;
-    border-radius: 50%;
+    position: absolute; bottom: -80px; left: 200px;
+    width: 320px; height: 320px; border-radius: 50%;
     background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
   }
-
   .cover-badge {
     display: inline-block;
     background: rgba(99,102,241,0.2);
     border: 1px solid rgba(99,102,241,0.4);
     color: #a5b4fc;
-    font-size: 8pt;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    padding: 5px 14px;
-    border-radius: 100px;
-    margin-bottom: 28px;
+    font-size: 8pt; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 5px 14px; border-radius: 100px; margin-bottom: 28px;
   }
-
   .cover h1 {
-    font-size: 42pt;
-    font-weight: 800;
-    color: var(--white);
-    line-height: 1.1;
-    letter-spacing: -0.03em;
-    margin-bottom: 8px;
+    font-size: 38pt; font-weight: 800; color: var(--white);
+    line-height: 1.1; letter-spacing: -0.03em; margin-bottom: 6px;
   }
-
-  .cover h1 span { color: #818cf8; }
-
-  .cover-sub {
-    font-size: 16pt;
-    font-weight: 400;
-    color: #94a3b8;
-    margin-bottom: 48px;
+  .cover-name-note {
+    font-size: 8.5pt; color: #64748b; margin-bottom: 16px; font-style: italic;
   }
+  .cover-sub { font-size: 16pt; font-weight: 400; color: #94a3b8; margin-bottom: 48px; }
+  .cover-divider { width: 48px; height: 3px; background: #6366f1; border-radius: 2px; margin-bottom: 32px; }
+  .cover-desc { font-size: 11pt; color: #cbd5e1; max-width: 520px; line-height: 1.7; margin-bottom: 64px; }
+  .cover-meta { display: flex; gap: 40px; }
+  .cover-meta-label { font-size: 7.5pt; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #64748b; margin-bottom: 4px; }
+  .cover-meta-value { font-size: 10pt; font-weight: 500; color: #e2e8f0; }
 
-  .cover-divider {
-    width: 48px;
-    height: 3px;
-    background: #6366f1;
-    border-radius: 2px;
-    margin-bottom: 32px;
-  }
-
-  .cover-desc {
-    font-size: 11pt;
-    color: #cbd5e1;
-    max-width: 520px;
-    line-height: 1.7;
-    margin-bottom: 64px;
-  }
-
-  .cover-meta {
-    display: flex;
-    gap: 40px;
-  }
-
-  .cover-meta-item { text-align: left; }
-  .cover-meta-label {
-    font-size: 7.5pt;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: #64748b;
-    margin-bottom: 4px;
-  }
-  .cover-meta-value {
-    font-size: 10pt;
-    font-weight: 500;
-    color: #e2e8f0;
-  }
-
-  /* ─── TABLE OF CONTENTS ──────────────────────────────────── */
-  .toc-page {
-    padding: 60px 80px;
-    page-break-after: always;
-  }
-
-  .toc-heading {
-    font-size: 9pt;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 32px;
-  }
-
+  /* ── TOC ─────────────────────────────────────────────────── */
+  .toc-page { padding: 60px 80px; page-break-after: always; }
+  .toc-heading { font-size: 9pt; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 32px; }
   .toc-list { list-style: none; }
+  .toc-item { display: flex; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .toc-num { font-size: 8pt; font-weight: 700; color: var(--accent); width: 28px; flex-shrink: 0; }
+  .toc-title { font-size: 10.5pt; font-weight: 500; color: var(--navy); flex: 1; }
+  .toc-dots { flex: 1; border-bottom: 1px dotted #cbd5e1; margin: 0 8px; position: relative; top: -3px; }
+  .toc-new { display: inline-block; font-size: 6.5pt; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; background: #fef3c7; color: #92400e; padding: 1px 6px; border-radius: 4px; margin-left: 8px; vertical-align: middle; }
 
-  .toc-item {
-    display: flex;
-    align-items: baseline;
-    gap: 0;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-  }
+  /* ── CONTENT ─────────────────────────────────────────────── */
+  .content { padding: 56px 80px; }
 
-  .toc-num {
-    font-size: 8pt;
-    font-weight: 700;
-    color: var(--accent);
-    width: 28px;
-    flex-shrink: 0;
-  }
+  .section-header { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; padding-top: 8px; }
+  .section-num { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: var(--navy); color: var(--white); border-radius: 10px; font-size: 13pt; font-weight: 700; flex-shrink: 0; }
+  .section-title { font-size: 17pt; font-weight: 700; color: var(--navy); letter-spacing: -0.02em; }
 
-  .toc-title {
-    font-size: 10.5pt;
-    font-weight: 500;
-    color: var(--navy);
-    flex: 1;
-  }
+  h3 { font-size: 11.5pt; font-weight: 700; color: var(--navy2); margin: 24px 0 10px; }
+  p  { margin-bottom: 12px; color: var(--slate); }
 
-  .toc-dots {
-    flex: 1;
-    border-bottom: 1px dotted #cbd5e1;
-    margin: 0 8px;
-    position: relative;
-    top: -3px;
-  }
-
-  /* ─── CONTENT ────────────────────────────────────────────── */
-  .content {
-    padding: 56px 80px;
-  }
-
-  /* Section header */
-  .section-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 28px;
-    padding-top: 8px;
-  }
-
-  .section-num {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    background: var(--navy);
-    color: var(--white);
-    border-radius: 10px;
-    font-size: 13pt;
-    font-weight: 700;
-    flex-shrink: 0;
-  }
-
-  .section-title {
-    font-size: 17pt;
-    font-weight: 700;
-    color: var(--navy);
-    letter-spacing: -0.02em;
-  }
-
-  /* Sub-heading */
-  h3 {
-    font-size: 11.5pt;
-    font-weight: 700;
-    color: var(--navy2);
-    margin: 24px 0 10px;
-  }
-
-  h4 {
-    font-size: 10pt;
-    font-weight: 700;
-    color: var(--slate);
-    margin: 16px 0 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-
-  p { margin-bottom: 12px; color: var(--slate); }
-
-  /* ─── STEP BLOCKS ────────────────────────────────────────── */
-  .steps { display: flex; flex-direction: column; gap: 16px; margin: 20px 0; }
-
-  .step {
-    display: flex;
-    gap: 16px;
-    align-items: flex-start;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px 18px;
-  }
-
-  .step-num {
-    width: 28px;
-    height: 28px;
-    background: var(--navy);
-    color: var(--white);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 9pt;
-    font-weight: 700;
-    flex-shrink: 0;
-    margin-top: 1px;
-  }
-
+  /* ── STEPS ───────────────────────────────────────────────── */
+  .steps { display: flex; flex-direction: column; gap: 12px; margin: 16px 0; }
+  .step { display: flex; gap: 16px; align-items: flex-start; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .step-num { width: 26px; height: 26px; background: var(--navy); color: var(--white); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9pt; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
   .step-body { flex: 1; }
+  .step-title { font-size: 10pt; font-weight: 700; color: var(--navy); margin-bottom: 5px; }
+  .step-desc  { font-size: 9pt; color: var(--slate); margin: 0; }
 
-  .step-title {
-    font-size: 10.5pt;
-    font-weight: 700;
-    color: var(--navy);
-    margin-bottom: 6px;
-  }
-
-  .step-desc { font-size: 9.5pt; color: var(--slate); margin: 0; }
-
-  /* ─── CALLOUT BOXES ──────────────────────────────────────── */
-  .callout {
-    border-radius: 10px;
-    padding: 14px 18px;
-    margin: 16px 0;
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-  }
-
-  .callout-icon { font-size: 15pt; flex-shrink: 0; line-height: 1.4; }
+  /* ── CALLOUTS ────────────────────────────────────────────── */
+  .callout { border-radius: 10px; padding: 13px 16px; margin: 14px 0; display: flex; gap: 12px; align-items: flex-start; }
+  .callout-icon { font-size: 14pt; flex-shrink: 0; line-height: 1.4; }
   .callout-body { flex: 1; }
   .callout-title { font-size: 9.5pt; font-weight: 700; margin-bottom: 4px; }
   .callout-text  { font-size: 9pt; margin: 0; line-height: 1.55; }
-
-  .callout.warning {
-    background: var(--amber-bg);
-    border: 1px solid var(--amber-bd);
-  }
+  .callout.warning { background: var(--amber-bg); border: 1px solid var(--amber-bd); }
   .callout.warning .callout-title { color: var(--amber); }
   .callout.warning .callout-text  { color: #78350f; }
-
-  .callout.danger {
-    background: var(--red-bg);
-    border: 1px solid var(--red-bd);
-  }
-  .callout.danger .callout-title { color: var(--red); }
-  .callout.danger .callout-text  { color: #7f1d1d; }
-
-  .callout.info {
-    background: var(--blue-bg);
-    border: 1px solid var(--blue-bd);
-  }
-  .callout.info .callout-title { color: var(--blue); }
-  .callout.info .callout-text  { color: #1e3a8a; }
-
-  .callout.success {
-    background: var(--green-bg);
-    border: 1px solid var(--green-bd);
-  }
+  .callout.danger  { background: var(--red-bg);   border: 1px solid var(--red-bd); }
+  .callout.danger  .callout-title { color: var(--red); }
+  .callout.danger  .callout-text  { color: #7f1d1d; }
+  .callout.info    { background: var(--blue-bg);  border: 1px solid var(--blue-bd); }
+  .callout.info    .callout-title { color: var(--blue); }
+  .callout.info    .callout-text  { color: #1e3a8a; }
+  .callout.success { background: var(--green-bg); border: 1px solid var(--green-bd); }
   .callout.success .callout-title { color: var(--green); }
   .callout.success .callout-text  { color: #14532d; }
+  .callout.purple  { background: var(--purple-bg); border: 1px solid var(--purple-bd); }
+  .callout.purple  .callout-title { color: var(--purple); }
+  .callout.purple  .callout-text  { color: #4c1d95; }
 
-  /* ─── CODE BLOCKS ────────────────────────────────────────── */
-  .code-block {
-    background: var(--navy);
-    border-radius: 10px;
-    overflow: hidden;
-    margin: 12px 0;
-  }
-
-  .code-bar {
-    background: var(--navy2);
-    padding: 8px 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .code-dot {
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
+  /* ── CODE BLOCKS ─────────────────────────────────────────── */
+  .code-block { background: var(--navy); border-radius: 10px; overflow: hidden; margin: 10px 0; }
+  .code-bar { background: var(--navy2); padding: 7px 14px; display: flex; align-items: center; gap: 7px; }
+  .code-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
   .code-dot.red    { background: #ef4444; }
   .code-dot.yellow { background: #f59e0b; }
   .code-dot.green  { background: #22c55e; }
-
-  .code-label {
-    font-size: 8pt;
-    font-weight: 500;
-    color: #64748b;
-    margin-left: 4px;
-  }
-
-  .code-content {
-    padding: 14px 18px;
-    font-family: 'JetBrains Mono', 'Courier New', monospace;
-    font-size: 8.5pt;
-    color: #e2e8f0;
-    line-height: 1.7;
-    white-space: pre;
-  }
-
+  .code-label { font-size: 7.5pt; font-weight: 500; color: #64748b; margin-left: 4px; }
+  .code-content { padding: 12px 16px; font-family: 'JetBrains Mono', monospace; font-size: 8.5pt; color: #e2e8f0; line-height: 1.7; white-space: pre; }
   .code-content .comment { color: #64748b; }
   .code-content .cmd     { color: #86efac; }
   .code-content .str     { color: #fca5a5; }
   .code-content .kw      { color: #93c5fd; }
+  .terminal-prompt::before { content: '$ '; color: #4ade80; }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 8pt; background: #f1f5f9; border: 1px solid #e2e8f0; padding: 1px 5px; border-radius: 4px; color: #1e293b; }
 
-  /* inline code */
-  code {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 8pt;
-    background: #f1f5f9;
-    border: 1px solid #e2e8f0;
-    padding: 1px 5px;
-    border-radius: 4px;
-    color: #1e293b;
-  }
-
-  /* ─── TABLES ─────────────────────────────────────────────── */
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 16px 0;
-    font-size: 9.5pt;
-  }
-
+  /* ── TABLES ──────────────────────────────────────────────── */
+  table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 9.5pt; }
   thead tr { background: var(--navy); color: var(--white); }
-  thead th { padding: 10px 14px; text-align: left; font-weight: 600; }
-
-  tbody tr:nth-child(even)  { background: var(--bg); }
-  tbody tr:nth-child(odd)   { background: var(--white); }
-  tbody td { padding: 9px 14px; color: var(--slate); border-bottom: 1px solid var(--border); }
+  thead th { padding: 9px 13px; text-align: left; font-weight: 600; }
+  tbody tr:nth-child(even) { background: var(--bg); }
+  tbody tr:nth-child(odd)  { background: var(--white); }
+  tbody td { padding: 8px 13px; color: var(--slate); border-bottom: 1px solid var(--border); }
   tbody td:first-child { font-weight: 500; color: var(--navy); }
-  tbody td code { background: var(--bg); }
 
-  /* ─── CHECKLIST ──────────────────────────────────────────── */
+  /* ── CHECKLIST ───────────────────────────────────────────── */
   .checklist { list-style: none; margin: 12px 0; }
+  .checklist li { display: flex; align-items: flex-start; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 9.5pt; color: var(--slate); }
+  .check-box { width: 16px; height: 16px; border: 2px solid #cbd5e1; border-radius: 4px; flex-shrink: 0; margin-top: 2px; }
 
-  .checklist li {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 7px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 9.5pt;
-    color: var(--slate);
-  }
-
-  .check-box {
-    width: 16px; height: 16px;
-    border: 2px solid #cbd5e1;
-    border-radius: 4px;
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
-
-  /* ─── RULE CARDS ─────────────────────────────────────────── */
-  .rule-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    margin: 16px 0;
-  }
-
-  .rule-card {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px;
-  }
-
-  .rule-card-icon { font-size: 18pt; margin-bottom: 8px; }
-  .rule-card-title { font-size: 9.5pt; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+  /* ── RULE CARDS ──────────────────────────────────────────── */
+  .rule-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+  .rule-card { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+  .rule-card-icon  { font-size: 16pt; margin-bottom: 7px; }
+  .rule-card-title { font-size: 9.5pt; font-weight: 700; color: var(--navy); margin-bottom: 5px; }
   .rule-card-body  { font-size: 8.5pt; color: var(--slate); line-height: 1.55; }
 
-  /* ─── GOLDEN RULE BANNER ─────────────────────────────────── */
-  .golden-rule {
-    background: linear-gradient(135deg, var(--navy) 0%, #1e293b 100%);
-    border-radius: 12px;
-    padding: 24px 28px;
-    margin: 24px 0;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-  }
+  /* ── PR FLOW DIAGRAM ─────────────────────────────────────── */
+  .pr-flow { display: flex; align-items: center; gap: 0; margin: 20px 0; flex-wrap: wrap; }
+  .pr-node { background: var(--navy); color: var(--white); border-radius: 10px; padding: 10px 14px; text-align: center; flex-shrink: 0; }
+  .pr-node-label { font-size: 7pt; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #818cf8; margin-bottom: 4px; }
+  .pr-node-title { font-size: 9pt; font-weight: 600; }
+  .pr-arrow { color: #6366f1; font-size: 14pt; margin: 0 8px; flex-shrink: 0; line-height: 1; padding-top: 4px; }
+  .pr-node.branch { background: #1e3a8a; }
+  .pr-node.pr     { background: #4c1d95; }
+  .pr-node.review { background: #065f46; }
+  .pr-node.merge  { background: #1e293b; border: 2px solid #6366f1; }
 
-  .golden-icon { font-size: 28pt; flex-shrink: 0; }
-
+  /* ── GOLDEN RULE ─────────────────────────────────────────── */
+  .golden-rule { background: linear-gradient(135deg, var(--navy) 0%, #1e293b 100%); border-radius: 12px; padding: 22px 26px; margin: 22px 0; display: flex; align-items: center; gap: 18px; }
+  .golden-icon { font-size: 26pt; flex-shrink: 0; }
   .golden-body { flex: 1; }
-  .golden-label {
-    font-size: 7.5pt;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #818cf8;
-    margin-bottom: 6px;
-  }
-  .golden-text {
-    font-size: 12pt;
-    font-weight: 700;
-    color: var(--white);
-    line-height: 1.4;
-    margin: 0;
-  }
+  .golden-label { font-size: 7.5pt; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #818cf8; margin-bottom: 5px; }
+  .golden-text  { font-size: 12pt; font-weight: 700; color: var(--white); line-height: 1.4; margin: 0; }
 
-  /* ─── DIVIDERS ───────────────────────────────────────────── */
-  .section-break {
-    border: none;
-    border-top: 2px solid var(--border);
-    margin: 40px 0 36px;
-  }
+  /* ── BRANCH NAME EXAMPLE ─────────────────────────────────── */
+  .branch-examples { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+  .branch-row { display: flex; align-items: center; gap: 12px; }
+  .branch-tag { font-size: 7pt; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; flex-shrink: 0; width: 60px; text-align: center; }
+  .branch-tag.feature { background: #dbeafe; color: #1d4ed8; }
+  .branch-tag.fix     { background: #fee2e2; color: #dc2626; }
+  .branch-tag.docs    { background: #f0fdf4; color: #16a34a; }
+  .branch-name { font-family: 'JetBrains Mono', monospace; font-size: 8.5pt; color: var(--navy); }
 
+  /* ── MISC ────────────────────────────────────────────────── */
+  .section-break { border: none; border-top: 2px solid var(--border); margin: 36px 0 32px; }
   .page-break { page-break-before: always; }
-
-  /* ─── FOOTER ─────────────────────────────────────────────── */
-  @page {
-    margin: 0;
-    size: A4;
-  }
-
-  .footer-bar {
-    background: var(--navy);
-    color: #64748b;
-    font-size: 7.5pt;
-    padding: 12px 80px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 48px;
-  }
-
+  @page { margin: 0; size: A4; }
+  .footer-bar { background: var(--navy); color: #64748b; font-size: 7.5pt; padding: 11px 80px; display: flex; justify-content: space-between; align-items: center; margin-top: 48px; }
   .footer-logo { font-weight: 800; color: #818cf8; font-size: 9pt; }
-
   ul { padding-left: 20px; margin: 10px 0; }
   ul li { margin-bottom: 6px; font-size: 9.5pt; color: var(--slate); }
   strong { color: var(--navy); font-weight: 600; }
-
-  .label-pill {
-    display: inline-block;
-    font-size: 7pt;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 2px 8px;
-    border-radius: 100px;
-    margin-left: 8px;
-    vertical-align: middle;
-  }
-  .pill-once    { background: #ede9fe; color: #6d28d9; }
-  .pill-always  { background: #fef3c7; color: #92400e; }
-  .pill-never   { background: #fee2e2; color: #991b1b; }
-
-  .terminal-prompt::before { content: '$ '; color: #4ade80; }
+  .label-pill { display: inline-block; font-size: 7pt; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 8px; border-radius: 100px; margin-left: 8px; vertical-align: middle; }
+  .pill-once   { background: #ede9fe; color: #6d28d9; }
+  .pill-always { background: #fef3c7; color: #92400e; }
+  .pill-never  { background: #fee2e2; color: #991b1b; }
 </style>
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════════════════
-     COVER
-════════════════════════════════════════════════════════════════ -->
+<!-- COVER -->
 <div class="cover">
   <div class="cover-badge">Developer Onboarding Guide</div>
-  <h1>EDGE<span>.</span></h1>
+  <h1>AI Trading Toolkit</h1>
+  <div class="cover-name-note">App name is not yet finalised — "EDGE" used in the codebase is a placeholder, subject to change</div>
   <div class="cover-sub">Standard Developer Procedures</div>
   <div class="cover-divider"></div>
-  <p class="cover-desc">
-    Everything you need to know to start contributing to the EDGE trading
-    toolkit — from first-time setup through daily development workflows,
-    Git best practices, and session handoff procedures.
-  </p>
+  <p class="cover-desc">Everything you need to know to start contributing — from first-time setup through daily development workflows, Git branching, pull request reviews, and session handoff procedures.</p>
   <div class="cover-meta">
-    <div class="cover-meta-item">
-      <div class="cover-meta-label">Project</div>
-      <div class="cover-meta-value">EDGE Trading Toolkit</div>
-    </div>
-    <div class="cover-meta-item">
-      <div class="cover-meta-label">Repository</div>
-      <div class="cover-meta-value">github.com/ianmaser/trading-toolkit</div>
-    </div>
-    <div class="cover-meta-item">
-      <div class="cover-meta-label">Version</div>
-      <div class="cover-meta-value">April 2026</div>
-    </div>
+    <div class="cover-meta-item"><div class="cover-meta-label">Project</div><div class="cover-meta-value">AI Trading Toolkit (name TBD)</div></div>
+    <div class="cover-meta-item"><div class="cover-meta-label">Repository</div><div class="cover-meta-value">github.com/ianmaser/trading-toolkit</div></div>
+    <div class="cover-meta-item"><div class="cover-meta-label">Version</div><div class="cover-meta-value">April 2026</div></div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════
-     TABLE OF CONTENTS
-════════════════════════════════════════════════════════════════ -->
+<!-- TOC -->
 <div class="toc-page">
   <div class="toc-heading">Contents</div>
   <ul class="toc-list">
@@ -560,85 +243,47 @@
     <li class="toc-item"><span class="toc-num">2</span><span class="toc-title">Starting Every Session</span><span class="toc-dots"></span></li>
     <li class="toc-item"><span class="toc-num">3</span><span class="toc-title">Working With Claude Code</span><span class="toc-dots"></span></li>
     <li class="toc-item"><span class="toc-num">4</span><span class="toc-title">Saving Your Work</span><span class="toc-dots"></span></li>
-    <li class="toc-item"><span class="toc-num">5</span><span class="toc-title">Ending Every Session</span><span class="toc-dots"></span></li>
-    <li class="toc-item"><span class="toc-num">6</span><span class="toc-title">Code Quality Checklist</span><span class="toc-dots"></span></li>
-    <li class="toc-item"><span class="toc-num">7</span><span class="toc-title">After Completing a Phase</span><span class="toc-dots"></span></li>
-    <li class="toc-item"><span class="toc-num">8</span><span class="toc-title">Weekly Audit</span><span class="toc-dots"></span></li>
-    <li class="toc-item"><span class="toc-num">9</span><span class="toc-title">Git Troubleshooting</span><span class="toc-dots"></span></li>
-    <li class="toc-item"><span class="toc-num">10</span><span class="toc-title">File Map</span><span class="toc-dots"></span></li>
+    <li class="toc-item"><span class="toc-num">5</span><span class="toc-title">Branching, Pull Requests & Code Review <span class="toc-new">important</span></span><span class="toc-dots"></span></li>
+    <li class="toc-item"><span class="toc-num">6</span><span class="toc-title">Ending Every Session</span><span class="toc-dots"></span></li>
+    <li class="toc-item"><span class="toc-num">7</span><span class="toc-title">Code Quality Checklist</span><span class="toc-dots"></span></li>
+    <li class="toc-item"><span class="toc-num">8</span><span class="toc-title">After Completing a Phase</span><span class="toc-dots"></span></li>
+    <li class="toc-item"><span class="toc-num">9</span><span class="toc-title">Weekly Audit</span><span class="toc-dots"></span></li>
+    <li class="toc-item"><span class="toc-num">10</span><span class="toc-title">Git Troubleshooting</span><span class="toc-dots"></span></li>
+    <li class="toc-item"><span class="toc-num">11</span><span class="toc-title">File Map</span><span class="toc-dots"></span></li>
   </ul>
 
-  <div style="margin-top: 40px;">
+  <div style="margin-top:36px;">
     <div class="golden-rule">
       <div class="golden-icon">⚡</div>
       <div class="golden-body">
-        <div class="golden-label">The Golden Rule</div>
-        <p class="golden-text">Always pull before you start.<br>Always push when you stop.</p>
+        <div class="golden-label">The Golden Rules</div>
+        <p class="golden-text">Never push directly to main.<br>Always create a branch. Always open a pull request.</p>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════
-     SECTION 1 — FIRST TIME SETUP
-════════════════════════════════════════════════════════════════ -->
+<!-- S1 FIRST TIME SETUP -->
 <div class="content">
-
   <div class="section-header">
     <div class="section-num">1</div>
     <div class="section-title">First Time Setup <span class="label-pill pill-once">Once only</span></div>
   </div>
-
-  <p>If you have never worked on this project before on your computer, follow every step below in order. You only do this once — skip to Section 2 after that.</p>
+  <p>Follow every step below in order. You only do this once — skip to Section 2 after that.</p>
 
   <h3>🖥️ What is a terminal?</h3>
   <p>The terminal is a text-based window where you type commands to control your computer. Think of it as texting your computer instructions. Everything is case-sensitive.</p>
-
   <div class="rule-grid">
-    <div class="rule-card">
-      <div class="rule-card-icon">🍎</div>
-      <div class="rule-card-title">Mac</div>
-      <div class="rule-card-body">Press <strong>Cmd + Space</strong>, type <strong>Terminal</strong>, press Enter.</div>
-    </div>
-    <div class="rule-card">
-      <div class="rule-card-icon">🪟</div>
-      <div class="rule-card-title">Windows</div>
-      <div class="rule-card-body">Press the <strong>Windows key</strong>, type <strong>PowerShell</strong>, press Enter.</div>
-    </div>
+    <div class="rule-card"><div class="rule-card-icon">🍎</div><div class="rule-card-title">Mac</div><div class="rule-card-body">Press <strong>Cmd + Space</strong>, type <strong>Terminal</strong>, press Enter.</div></div>
+    <div class="rule-card"><div class="rule-card-icon">🪟</div><div class="rule-card-title">Windows</div><div class="rule-card-body">Press the <strong>Windows key</strong>, type <strong>PowerShell</strong>, press Enter.</div></div>
   </div>
 
-  <h3>📦 Install prerequisites</h3>
-  <p>Install these in order. After each one, close and reopen your terminal before moving on.</p>
-
+  <h3>📦 Install prerequisites — in this order</h3>
   <div class="steps">
-    <div class="step">
-      <div class="step-num">1</div>
-      <div class="step-body">
-        <div class="step-title">Node.js — the engine that runs the app</div>
-        <p class="step-desc">Download from <strong>nodejs.org</strong> — choose the LTS version. Verify: type <code>node -v</code> in your terminal. You should see something like <code>v20.18.0</code>.</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num">2</div>
-      <div class="step-body">
-        <div class="step-title">Git — the tool that saves and shares code</div>
-        <p class="step-desc">Download from <strong>git-scm.com</strong>. Verify: type <code>git -v</code>. You should see <code>git version 2.x.x</code>.</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num">3</div>
-      <div class="step-body">
-        <div class="step-title">VS Code — the code editor</div>
-        <p class="step-desc">Download from <strong>code.visualstudio.com</strong>. This is where you read and review code.</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num">4</div>
-      <div class="step-body">
-        <div class="step-title">Claude Code — the AI that builds with you</div>
-        <p class="step-desc">Open VS Code → Extensions panel (four-square icon) → search <strong>Claude Code</strong> → Install. Or run <code>npm install -g @anthropic-ai/claude-code</code> in your terminal.</p>
-      </div>
-    </div>
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Node.js — the engine that runs the app</div><p class="step-desc">Download from <strong>nodejs.org</strong> (LTS version). Verify: <code>node -v</code> → should show <code>v20.x.x</code></p></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Git — the tool that saves and shares code</div><p class="step-desc">Download from <strong>git-scm.com</strong>. Verify: <code>git -v</code> → should show <code>git version 2.x.x</code></p></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">VS Code — the code editor</div><p class="step-desc">Download from <strong>code.visualstudio.com</strong>. This is where you read and review code.</p></div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-body"><div class="step-title">Claude Code — the AI that builds with you</div><p class="step-desc">In VS Code: Extensions panel → search <strong>Claude Code</strong> → Install. Or run <code>npm install -g @anthropic-ai/claude-code</code> in terminal.</p></div></div>
   </div>
 
   <h3>🔌 Recommended VS Code extensions</h3>
@@ -652,308 +297,264 @@
     </tbody>
   </table>
 
-  <h3>📥 Clone the project from GitHub</h3>
-  <p>"Cloning" downloads the full project to your computer. Run these two commands, one at a time:</p>
-
+  <h3>📥 Clone the project</h3>
   <div class="code-block">
-    <div class="code-bar">
-      <div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div>
-      <span class="code-label">terminal</span>
-    </div>
+    <div class="code-bar"><div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div><span class="code-label">terminal</span></div>
     <div class="code-content"><span class="comment"># Download the project</span>
 <span class="terminal-prompt"></span><span class="cmd">git clone https://github.com/ianmaser/trading-toolkit.git</span>
-
-<span class="comment"># Navigate into the project folder</span>
 <span class="terminal-prompt"></span><span class="cmd">cd trading-toolkit</span>
-
-<span class="comment"># Open it in VS Code</span>
+<span class="terminal-prompt"></span><span class="cmd">npm install</span>
 <span class="terminal-prompt"></span><span class="cmd">code .</span></div>
   </div>
-
-  <h3>📚 Install dependencies</h3>
-  <p>This downloads all the libraries the project needs. It may take a minute — the scrolling text is normal.</p>
-
-  <div class="code-block">
-    <div class="code-bar">
-      <div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div>
-      <span class="code-label">terminal</span>
-    </div>
-    <div class="code-content"><span class="terminal-prompt"></span><span class="cmd">npm install</span></div>
-  </div>
-
-  <h3>🔑 Set up your environment variables</h3>
-  <p>The project needs API keys (secret passwords for external services) to run. These are <strong>never stored in Git</strong> for security reasons.</p>
 
   <div class="callout warning">
     <div class="callout-icon">⚠️</div>
     <div class="callout-body">
-      <div class="callout-title">Important — never skip this step</div>
-      <p class="callout-text">Ask your partner to share the <code>.env.local</code> file with you directly (iMessage, email, etc.). Place it in the root of the project folder — the same level as <code>package.json</code>. Never share this file publicly. Never commit it to Git.</p>
+      <div class="callout-title">Set up your environment variables</div>
+      <p class="callout-text">Ask your partner to share the <code>.env.local</code> file. Place it in the root project folder. <strong>Never commit it to Git. Never share it publicly.</strong> It contains API keys for all external services.</p>
     </div>
   </div>
 
   <h3>✅ Confirm everything works</h3>
-
   <div class="code-block">
-    <div class="code-bar">
-      <div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div>
-      <span class="code-label">terminal</span>
-    </div>
-    <div class="code-content"><span class="terminal-prompt"></span><span class="cmd">npx tsc --noEmit</span></div>
+    <div class="code-bar"><div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div><span class="code-label">terminal</span></div>
+    <div class="code-content"><span class="terminal-prompt"></span><span class="cmd">npx tsc --noEmit</span>
+<span class="comment"># No output = no errors = you're good to go</span></div>
   </div>
-
-  <div class="callout success">
-    <div class="callout-icon">✅</div>
-    <div class="callout-body">
-      <div class="callout-title">No output = no errors</div>
-      <p class="callout-text">If you see nothing after running this command, the codebase is clean and you're ready to go. If you see red error messages, stop and message your partner before doing anything else.</p>
-    </div>
-  </div>
-
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════
-     SECTION 2 — STARTING EVERY SESSION
-════════════════════════════════════════════════════════════════ -->
+<!-- S2 STARTING EVERY SESSION -->
 <div class="page-break"></div>
 <div class="content">
-
   <div class="section-header">
     <div class="section-num">2</div>
     <div class="section-title">Starting Every Session <span class="label-pill pill-always">Every time</span></div>
   </div>
-
-  <p>This is your pre-flight checklist. It takes 2 minutes and prevents hours of headaches. Do not skip steps — they exist for good reasons.</p>
+  <p>Your pre-flight checklist. Takes 2 minutes. Do not skip steps.</p>
 
   <div class="steps">
-    <div class="step">
-      <div class="step-num">1</div>
-      <div class="step-body">
-        <div class="step-title">Open your terminal in the project folder</div>
-        <p class="step-desc">In VS Code: top menu → <strong>Terminal</strong> → <strong>New Terminal</strong>. This opens a terminal already pointed at the project — no navigating needed.</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num">2</div>
-      <div class="step-body">
-        <div class="step-title">Get the latest code from GitHub</div>
-        <p class="step-desc">Your partner may have made changes since you last worked. Always pull first.</p>
-      </div>
-    </div>
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Open terminal in the project folder</div><p class="step-desc">In VS Code: top menu → <strong>Terminal</strong> → <strong>New Terminal</strong>.</p></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Get the latest code from main</div><p class="step-desc">Always start from an up-to-date main before creating your branch.</p></div></div>
   </div>
 
   <div class="code-block">
-    <div class="code-bar">
-      <div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div>
-      <span class="code-label">terminal</span>
-    </div>
-    <div class="code-content"><span class="terminal-prompt"></span><span class="cmd">git pull origin main</span></div>
+    <div class="code-bar"><div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div><span class="code-label">terminal</span></div>
+    <div class="code-content"><span class="terminal-prompt"></span><span class="cmd">git checkout main</span>
+<span class="terminal-prompt"></span><span class="cmd">git pull origin main</span></div>
   </div>
 
   <div class="callout danger">
     <div class="callout-icon">🚨</div>
     <div class="callout-body">
       <div class="callout-title">If you see "CONFLICT" in the output</div>
-      <p class="callout-text">Stop immediately. A conflict means two people edited the same file at the same time. Do not touch anything. Message your partner — resolve it together.</p>
+      <p class="callout-text">Stop immediately. Two people edited the same file. Message your partner — resolve it together before doing anything else.</p>
     </div>
   </div>
 
   <div class="steps">
-    <div class="step">
-      <div class="step-num">3</div>
-      <div class="step-body">
-        <div class="step-title">Install any new dependencies</div>
-        <p class="step-desc">Safe to run every time — does nothing if nothing changed.</p>
-      </div>
-    </div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Install any new dependencies</div><p class="step-desc">Safe to run every session — does nothing if nothing changed.</p></div></div>
   </div>
-
   <div class="code-block">
-    <div class="code-bar">
-      <div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div>
-      <span class="code-label">terminal</span>
-    </div>
+    <div class="code-bar"><div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div><span class="code-label">terminal</span></div>
     <div class="code-content"><span class="terminal-prompt"></span><span class="cmd">npm install</span></div>
   </div>
 
   <div class="steps">
-    <div class="step">
-      <div class="step-num">4</div>
-      <div class="step-body">
-        <div class="step-title">Confirm the codebase is clean</div>
-        <p class="step-desc">No output = no errors. If there are errors, do not start building — fix them first or ask your partner.</p>
-      </div>
-    </div>
+    <div class="step"><div class="step-num">4</div><div class="step-body"><div class="step-title">Confirm the codebase is clean</div><p class="step-desc">No output = no errors. If there are errors, fix them or ask your partner before starting work.</p></div></div>
   </div>
-
   <div class="code-block">
-    <div class="code-bar">
-      <div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div>
-      <span class="code-label">terminal</span>
-    </div>
+    <div class="code-bar"><div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div><span class="code-label">terminal</span></div>
     <div class="code-content"><span class="terminal-prompt"></span><span class="cmd">npx tsc --noEmit</span></div>
   </div>
 
   <div class="steps">
-    <div class="step">
-      <div class="step-num">5</div>
-      <div class="step-body">
-        <div class="step-title">Read the session notes</div>
-        <p class="step-desc">Open the <code>sessions/</code> folder and read the most recent file. It tells you exactly where the last session left off and what to do next.</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num">6</div>
-      <div class="step-body">
-        <div class="step-title">Read the build plan for today's work</div>
-        <p class="step-desc">Open <code>PLAN.MD</code> and find the prompt for the feature you're building. Read it fully before opening Claude Code. If the feature touches API routes, caching, auth, or BULL-E, also skim the relevant section of <code>ARCHITECTURE.md</code>.</p>
-      </div>
-    </div>
+    <div class="step"><div class="step-num">5</div><div class="step-body"><div class="step-title">Create your feature branch</div><p class="step-desc"><strong>Never work directly on main.</strong> Create a branch for what you're building today before touching any code. See Section 5 for naming rules.</p></div></div>
+  </div>
+  <div class="code-block">
+    <div class="code-bar"><div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div><span class="code-label">terminal</span></div>
+    <div class="code-content"><span class="terminal-prompt"></span><span class="cmd">git checkout -b feature/phase-01-market-data-service</span></div>
   </div>
 
+  <div class="steps">
+    <div class="step"><div class="step-num">6</div><div class="step-body"><div class="step-title">Read the session notes</div><p class="step-desc">Open <code>sessions/</code> and read the most recent file to find out where the last session left off.</p></div></div>
+    <div class="step"><div class="step-num">7</div><div class="step-body"><div class="step-title">Read the build plan for today</div><p class="step-desc">Open <code>PLAN.MD</code> and find your prompt. Read it fully before opening Claude Code.</p></div></div>
+  </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════
-     SECTION 3 — WORKING WITH CLAUDE CODE
-════════════════════════════════════════════════════════════════ -->
+<!-- S3 WORKING WITH CLAUDE CODE -->
 <div class="content">
   <hr class="section-break">
-
   <div class="section-header">
     <div class="section-num">3</div>
     <div class="section-title">Working With Claude Code</div>
   </div>
-
-  <p>Claude Code is an AI assistant that writes code alongside you. It reads the project files, understands the architecture, and builds features based on your instructions. It does <strong>not</strong> remember previous sessions — you must give it context every time.</p>
+  <p>Claude Code is an AI that writes code alongside you. It reads your project files and builds features based on your instructions. It has <strong>no memory of previous sessions</strong> — you must give it context every time.</p>
 
   <div class="callout info">
     <div class="callout-icon">💡</div>
     <div class="callout-body">
-      <div class="callout-title">How to start a feature — use this prompt every time</div>
-      <p class="callout-text">"Read CLAUDE.md and PLAN.MD. We're building <em>[feature name from PLAN.MD]</em>. Here's exactly what it needs to do: <em>[paste the full prompt text from PLAN.MD]</em>"</p>
+      <div class="callout-title">Starting prompt — use this every time</div>
+      <p class="callout-text">"Read CLAUDE.md and PLAN.MD. We're building <em>[feature name]</em>. Here's exactly what it needs to do: <em>[paste the full prompt from PLAN.MD]</em>"</p>
     </div>
   </div>
 
   <div class="rule-grid">
-    <div class="rule-card">
-      <div class="rule-card-icon">1️⃣</div>
-      <div class="rule-card-title">One prompt at a time</div>
-      <div class="rule-card-body">Never ask Claude to build two features in one message. You will always get worse results when you combine prompts.</div>
-    </div>
-    <div class="rule-card">
-      <div class="rule-card-icon">🔧</div>
-      <div class="rule-card-title">When something breaks</div>
-      <div class="rule-card-body">Paste the <strong>full error</strong> and the <strong>full file</strong>. Say: "Don't rewrite the whole file. Find the specific problem and fix only that."</div>
-    </div>
-    <div class="rule-card">
-      <div class="rule-card-icon">📝</div>
-      <div class="rule-card-title">Ask Claude to write session notes</div>
-      <div class="rule-card-body">Say: "Record everything we implemented today in a session note titled <em>04-16-2026-phase-01.md</em>"</div>
-    </div>
-    <div class="rule-card">
-      <div class="rule-card-icon">🧠</div>
-      <div class="rule-card-title">Claude has no memory</div>
-      <div class="rule-card-body">Never skip the context prompt at the start. Starting without it is like asking someone to continue a conversation they weren't in.</div>
-    </div>
+    <div class="rule-card"><div class="rule-card-icon">1️⃣</div><div class="rule-card-title">One prompt at a time</div><div class="rule-card-body">Never ask Claude to build two features in one message — you'll get worse results every time.</div></div>
+    <div class="rule-card"><div class="rule-card-icon">🔧</div><div class="rule-card-title">When something breaks</div><div class="rule-card-body">Paste the <strong>full error</strong> + <strong>full file</strong>. Say: "Don't rewrite the whole file. Find the specific problem and fix only that."</div></div>
+    <div class="rule-card"><div class="rule-card-icon">🧠</div><div class="rule-card-title">Claude has no memory</div><div class="rule-card-body">Never skip the context prompt. Starting without it is like asking someone to continue a conversation they weren't in.</div></div>
+    <div class="rule-card"><div class="rule-card-icon">📝</div><div class="rule-card-title">Session notes via Claude</div><div class="rule-card-body">"Record everything we implemented today in a session note titled <em>04-16-2026-phase-01.md</em>"</div></div>
   </div>
-
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════
-     SECTION 4 — SAVING YOUR WORK
-════════════════════════════════════════════════════════════════ -->
+<!-- S4 SAVING YOUR WORK -->
 <div class="page-break"></div>
 <div class="content">
-
   <div class="section-header">
     <div class="section-num">4</div>
     <div class="section-title">Saving Your Work <span class="label-pill pill-always">After every prompt</span></div>
   </div>
-
-  <p>Once a prompt is done and <code>npx tsc --noEmit</code> shows no errors, save your work to GitHub using these four steps in order.</p>
+  <p>Once a prompt is done and <code>npx tsc --noEmit</code> shows no errors, save your work. You are saving to <strong>your branch</strong> — not main.</p>
 
   <div class="steps">
-    <div class="step">
-      <div class="step-num">1</div>
-      <div class="step-body">
-        <div class="step-title">Check what changed</div>
-        <p class="step-desc">Review every file listed. Make sure you recognise everything before saving.</p>
-      </div>
-    </div>
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Check what changed</div><p class="step-desc">Review every file listed. Make sure you recognise everything before saving.</p></div></div>
   </div>
-
   <div class="code-block">
-    <div class="code-bar">
-      <div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div>
-      <span class="code-label">terminal</span>
-    </div>
+    <div class="code-bar"><div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div><span class="code-label">terminal</span></div>
     <div class="code-content"><span class="terminal-prompt"></span><span class="cmd">git status</span></div>
   </div>
 
   <div class="steps">
-    <div class="step">
-      <div class="step-num">2</div>
-      <div class="step-body">
-        <div class="step-title">Stage your changes</div>
-        <p class="step-desc">Tells Git which files to include in this save. <code>.env.local</code> is automatically excluded — you will never accidentally commit your API keys.</p>
-      </div>
-    </div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Stage your changes</div><p class="step-desc"><code>.env.local</code> is auto-excluded — you will never accidentally commit API keys.</p></div></div>
   </div>
-
   <div class="code-block">
-    <div class="code-bar">
-      <div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div>
-      <span class="code-label">terminal</span>
-    </div>
+    <div class="code-bar"><div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div><span class="code-label">terminal</span></div>
     <div class="code-content"><span class="terminal-prompt"></span><span class="cmd">git add .</span></div>
   </div>
 
   <div class="steps">
-    <div class="step">
-      <div class="step-num">3</div>
-      <div class="step-body">
-        <div class="step-title">Commit your changes</div>
-        <p class="step-desc">A commit is a named save point. Use this format every time: <code>feat: Phase {N} Prompt {N} — {short description}</code></p>
-      </div>
-    </div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Commit with a clear message</div><p class="step-desc">Format: <code>feat: Phase {N} Prompt {N} — {short description}</code></p></div></div>
   </div>
-
   <div class="code-block">
-    <div class="code-bar">
-      <div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div>
-      <span class="code-label">terminal</span>
-    </div>
+    <div class="code-bar"><div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div><span class="code-label">terminal</span></div>
     <div class="code-content"><span class="terminal-prompt"></span><span class="cmd">git commit -m "feat: Phase 1 Prompt 5 — market data service"</span></div>
   </div>
 
   <div class="steps">
-    <div class="step">
-      <div class="step-num">4</div>
-      <div class="step-body">
-        <div class="step-title">Push to GitHub</div>
-        <p class="step-desc">Uploads your commit so your partner can see it. You'll see output ending in <code>main -> main</code> when it works.</p>
-      </div>
+    <div class="step"><div class="step-num">4</div><div class="step-body"><div class="step-title">Push your branch to GitHub</div><p class="step-desc">Push to <strong>your branch</strong>, not main. The first time you push a new branch, Git may suggest adding <code>--set-upstream</code> — follow its suggestion.</p></div></div>
+  </div>
+  <div class="code-block">
+    <div class="code-bar"><div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div><span class="code-label">terminal</span></div>
+    <div class="code-content"><span class="comment"># Push your branch (not main)</span>
+<span class="terminal-prompt"></span><span class="cmd">git push origin feature/phase-01-market-data-service</span></div>
+  </div>
+</div>
+
+<!-- S5 BRANCHING / PR / REVIEW -->
+<div class="page-break"></div>
+<div class="content">
+  <div class="section-header">
+    <div class="section-num">5</div>
+    <div class="section-title">Branching, Pull Requests & Code Review</div>
+  </div>
+
+  <div class="callout danger">
+    <div class="callout-icon">🚫</div>
+    <div class="callout-body">
+      <div class="callout-title">Direct pushes to main are not allowed</div>
+      <p class="callout-text"><code>main</code> is the stable, deployable version of the app. It should always be in a working state. Every change enters main through a branch and pull request — no exceptions. GitHub is configured to reject any direct push to main.</p>
     </div>
+  </div>
+
+  <h3>🌿 Branch naming</h3>
+
+  <div class="branch-examples">
+    <div class="branch-row"><span class="branch-tag feature">feature</span><span class="branch-name">feature/phase-01-market-data-service</span></div>
+    <div class="branch-row"><span class="branch-tag feature">feature</span><span class="branch-name">feature/phase-02-watchlist-page</span></div>
+    <div class="branch-row"><span class="branch-tag fix">fix</span><span class="branch-name">fix/backtest-crash-on-empty-candles</span></div>
+    <div class="branch-row"><span class="branch-tag docs">docs</span><span class="branch-name">docs/update-architecture-notes</span></div>
+  </div>
+
+  <h3>🔄 The full workflow — start to finish</h3>
+
+  <div class="pr-flow">
+    <div class="pr-node branch"><div class="pr-node-label">Start</div><div class="pr-node-title">Create branch<br>from main</div></div>
+    <div class="pr-arrow">→</div>
+    <div class="pr-node"><div class="pr-node-label">Build</div><div class="pr-node-title">Commit work<br>to branch</div></div>
+    <div class="pr-arrow">→</div>
+    <div class="pr-node pr"><div class="pr-node-label">Share</div><div class="pr-node-title">Open pull<br>request</div></div>
+    <div class="pr-arrow">→</div>
+    <div class="pr-node review"><div class="pr-node-label">Review</div><div class="pr-node-title">Partner<br>approves</div></div>
+    <div class="pr-arrow">→</div>
+    <div class="pr-node merge"><div class="pr-node-label">Done</div><div class="pr-node-title">Squash<br>& merge</div></div>
+  </div>
+
+  <h3>📬 Opening a pull request</h3>
+  <p>Once you've pushed your branch and your work is ready for review:</p>
+
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Go to the repository on GitHub</div><p class="step-desc">github.com/ianmaser/trading-toolkit — GitHub will show a banner: <strong>"Compare & pull request"</strong>. Click it.</p></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Fill in the pull request form</div><p class="step-desc">Title uses the same format as commits: <code>feat: Phase 1 Prompt 5 — market data service</code></p></div></div>
   </div>
 
   <div class="code-block">
-    <div class="code-bar">
-      <div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div>
-      <span class="code-label">terminal</span>
-    </div>
-    <div class="code-content"><span class="terminal-prompt"></span><span class="cmd">git push origin main</span></div>
+    <div class="code-bar"><div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div><span class="code-label">PR description template</span></div>
+    <div class="code-content"><span class="kw">## What was built</span>
+Brief description of what this PR adds or changes.
+
+<span class="kw">## How to test it</span>
+Step-by-step instructions so your partner can verify it works.
+
+<span class="kw">## Decisions made</span>
+Any choices not already in PLAN.MD or ARCHITECTURE.md.
+
+<span class="kw">## Notes for reviewer</span>
+Anything you're unsure about or want a second opinion on.</div>
   </div>
 
+  <div class="steps">
+    <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Assign your partner as reviewer</div><p class="step-desc">Top right of the PR page → <strong>Reviewers</strong> → select your partner. Then click <strong>"Create pull request"</strong>.</p></div></div>
+  </div>
+
+  <h3>🔍 Reviewing a pull request</h3>
+  <p>When your partner assigns you as reviewer:</p>
+
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Read the description and check the files changed</div><p class="step-desc">Click <strong>"Files changed"</strong> tab on the PR to see every added or modified line.</p></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Test it locally (optional but recommended)</div><p class="step-desc">Pull the branch and run the type check to confirm it works on your machine.</p></div></div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-bar"><div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div><span class="code-label">terminal</span></div>
+    <div class="code-content"><span class="terminal-prompt"></span><span class="cmd">git fetch origin</span>
+<span class="terminal-prompt"></span><span class="cmd">git checkout feature/phase-01-market-data-service</span>
+<span class="terminal-prompt"></span><span class="cmd">npm install</span>
+<span class="terminal-prompt"></span><span class="cmd">npx tsc --noEmit</span></div>
+  </div>
+
+  <div class="steps">
+    <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Leave comments or approve</div><p class="step-desc">Click the <code>+</code> next to any line to leave a comment. When you're happy: <strong>"Review changes"</strong> → <strong>"Approve"</strong> → <strong>"Submit review"</strong>.</p></div></div>
+  </div>
+
+  <h3>✅ Merging and cleaning up</h3>
+
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Merge after approval</div><p class="step-desc">Click <strong>"Squash and merge"</strong> — this keeps the commit history clean. Then confirm the merge.</p></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Delete the branch</div><p class="step-desc">Click <strong>"Delete branch"</strong> immediately after merging. The branch has served its purpose.</p></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Both partners pull main</div><p class="step-desc">After any merge, both developers should update their local main — don't start a new branch from a stale copy.</p></div></div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-bar"><div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div><span class="code-label">terminal — run after every merge</span></div>
+    <div class="code-content"><span class="terminal-prompt"></span><span class="cmd">git checkout main</span>
+<span class="terminal-prompt"></span><span class="cmd">git pull origin main</span></div>
+  </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════
-     SECTION 5 — ENDING EVERY SESSION
-════════════════════════════════════════════════════════════════ -->
+<!-- S6 ENDING EVERY SESSION -->
+<div class="page-break"></div>
 <div class="content">
-  <hr class="section-break">
-
   <div class="section-header">
-    <div class="section-num">5</div>
+    <div class="section-num">6</div>
     <div class="section-title">Ending Every Session <span class="label-pill pill-always">Every time</span></div>
   </div>
 
@@ -961,230 +562,145 @@
     <div class="callout-icon">🚨</div>
     <div class="callout-body">
       <div class="callout-title">Claude does not remember your last session</div>
-      <p class="callout-text">Every time you open Claude Code, it starts with zero memory of what you built before. The only way it knows what happened is if you tell it — and the only way your partner knows is if you write it down. Write a session note every time you stop, even if you only worked for 30 minutes and didn't finish anything.</p>
+      <p class="callout-text">Every time you open Claude Code, it starts with zero memory of what you built before. Write a session note every time you stop — even if you only worked for 30 minutes and didn't finish anything. Your partner and Claude both depend on it.</p>
     </div>
   </div>
 
   <div class="steps">
-    <div class="step">
-      <div class="step-num">1</div>
-      <div class="step-body">
-        <div class="step-title">Ask Claude to write the session note</div>
-        <p class="step-desc">Tell Claude: <em>"Record everything we implemented today in a session note titled MM-DD-YYYY-short-description.md"</em><br><br>
-        Examples: <code>04-16-2026-phase-01-market-data.md</code> · <code>04-17-2026-backtest-bugfix.md</code></p>
-      </div>
-    </div>
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Ask Claude to write the session note</div><p class="step-desc">"Record everything we implemented today in a session note titled <code>MM-DD-YYYY-short-description.md</code>"</p></div></div>
   </div>
 
-  <h3>📋 Session note template</h3>
-
   <div class="code-block">
-    <div class="code-bar">
-      <div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div>
-      <span class="code-label">sessions/MM-DD-YYYY-title.md</span>
-    </div>
+    <div class="code-bar"><div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div><span class="code-label">sessions/MM-DD-YYYY-title.md</span></div>
     <div class="code-content"><span class="kw"># Session — MM-DD-YYYY — [Title]</span>
 
-<span class="kw">## Who worked on this</span>
-[Your name]
-
-<span class="kw">## What was built</span>
-- Prompt X: [what you built and where the files are]
-
-<span class="kw">## What is NOT finished yet</span>
-- [e.g. "Started Prompt 6 but Redis caching not wired up yet"]
-
-<span class="kw">## Left off at</span>
-- [Exactly what the next person should do first]
-
-<span class="kw">## Decisions made</span>
-- [Choices not in PLAN.MD or ARCHITECTURE.md]
-
-<span class="kw">## Open questions</span>
-- [Anything unresolved the other person needs to decide]</div>
+<span class="kw">## Who worked on this</span>    [Your name]
+<span class="kw">## Branch</span>                  [Branch name — is there a PR open?]
+<span class="kw">## What was built</span>          [Prompt X: description + file locations]
+<span class="kw">## What is NOT finished</span>    [e.g. Redis caching not wired up yet]
+<span class="kw">## Left off at</span>             [Exactly what to do next session]
+<span class="kw">## Decisions made</span>          [Choices not in PLAN.MD or ARCHITECTURE.md]
+<span class="kw">## Open questions</span>          [Anything the other person needs to decide]</div>
   </div>
 
   <div class="steps">
-    <div class="step">
-      <div class="step-num">2</div>
-      <div class="step-body">
-        <div class="step-title">Commit and push the session note</div>
-        <p class="step-desc">Never leave without pushing. Your partner's next session depends on it.</p>
-      </div>
-    </div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Commit and push the session note to your branch</div><p class="step-desc">Then open a PR if your work is ready for review. If you're mid-feature, just push so your partner can see where you are.</p></div></div>
   </div>
 
   <div class="code-block">
-    <div class="code-bar">
-      <div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div>
-      <span class="code-label">terminal</span>
-    </div>
+    <div class="code-bar"><div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div><span class="code-label">terminal</span></div>
     <div class="code-content"><span class="terminal-prompt"></span><span class="cmd">git add sessions/</span>
 <span class="terminal-prompt"></span><span class="cmd">git commit -m "docs: session notes MM-DD-YYYY"</span>
-<span class="terminal-prompt"></span><span class="cmd">git push origin main</span></div>
+<span class="terminal-prompt"></span><span class="cmd">git push origin your-branch-name</span></div>
   </div>
 
-</div>
+  <hr class="section-break">
 
-<!-- ═══════════════════════════════════════════════════════════
-     SECTION 6 — CODE QUALITY CHECKLIST
-════════════════════════════════════════════════════════════════ -->
-<div class="page-break"></div>
-<div class="content">
-
+  <!-- S7 QUALITY CHECKLIST -->
   <div class="section-header">
-    <div class="section-num">6</div>
+    <div class="section-num">7</div>
     <div class="section-title">Code Quality Checklist <span class="label-pill pill-always">Before every commit</span></div>
   </div>
-
-  <p>Run through this before marking any prompt as done. Every item must be checked before you commit.</p>
-
   <ul class="checklist">
     <li><div class="check-box"></div><code>npx tsc --noEmit</code> — zero errors, no output</li>
     <li><div class="check-box"></div>No <code>any</code> types in any new code</li>
-    <li><div class="check-box"></div>No hardcoded URLs, API keys, or secrets — everything is in <code>.env.local</code></li>
+    <li><div class="check-box"></div>No hardcoded URLs, API keys, or secrets — everything in <code>.env.local</code></li>
     <li><div class="check-box"></div>TypeScript only — no <code>.js</code> files created</li>
     <li><div class="check-box"></div>All new UI components have a loading skeleton and an error state</li>
     <li><div class="check-box"></div>All buttons and interactive elements have an <code>aria-label</code></li>
-    <li><div class="check-box"></div>All API inputs are validated with Zod</li>
-    <li><div class="check-box"></div>Mobile layout looks correct at 375px width</li>
+    <li><div class="check-box"></div>All API inputs validated with Zod</li>
+    <li><div class="check-box"></div>Mobile layout works at 375px width</li>
   </ul>
 
   <hr class="section-break">
 
-  <div class="section-header">
-    <div class="section-num">7</div>
-    <div class="section-title">After Completing a Phase</div>
-  </div>
-
-  <div class="steps">
-    <div class="step">
-      <div class="step-num">1</div>
-      <div class="step-body">
-        <div class="step-title">Ask Claude to write tests</div>
-        <p class="step-desc">"Write tests for everything we just built — happy path, empty states, and error conditions."</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num">2</div>
-      <div class="step-body">
-        <div class="step-title">Manually test the user journey</div>
-        <p class="step-desc">Click through the full flow affected by the phase. Confirm it works end to end in your browser.</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num">3</div>
-      <div class="step-body">
-        <div class="step-title">Update the phase status in CLAUDE.md</div>
-        <p class="step-desc">Open <code>CLAUDE.md</code> and change the phase from ⬜ to ✅ in the feature map table.</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num">4</div>
-      <div class="step-body">
-        <div class="step-title">Commit, push, write your session note</div>
-        <p class="step-desc">Follow sections 4 and 5 as normal. Then move to Section 8 if it's Friday.</p>
-      </div>
-    </div>
-  </div>
-
-  <hr class="section-break">
-
+  <!-- S8 AFTER A PHASE -->
   <div class="section-header">
     <div class="section-num">8</div>
+    <div class="section-title">After Completing a Phase</div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Ask Claude to write tests</div><p class="step-desc">"Write tests for everything we just built — happy path, empty states, and error conditions."</p></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Manually test the full user journey</div><p class="step-desc">Click through everything affected by the phase in your browser. Confirm it works end to end.</p></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Update CLAUDE.md</div><p class="step-desc">Change the phase status from ⬜ to ✅ in the feature map.</p></div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-body"><div class="step-title">Open a pull request and get it reviewed</div><p class="step-desc">Don't merge to main until your partner has approved. See Section 5.</p></div></div>
+  </div>
+</div>
+
+<!-- S9 WEEKLY AUDIT + S10 TROUBLESHOOTING -->
+<div class="page-break"></div>
+<div class="content">
+  <div class="section-header">
+    <div class="section-num">9</div>
     <div class="section-title">Weekly Audit <span class="label-pill pill-always">Every Friday</span></div>
   </div>
-
-  <p>Copy and paste this exactly into Claude Code every Friday:</p>
-
   <div class="callout info">
     <div class="callout-icon">🔍</div>
     <div class="callout-body">
-      <div class="callout-title">Friday audit prompt</div>
+      <div class="callout-title">Copy and paste this into Claude Code every Friday</div>
       <p class="callout-text">"Review all the files we've built this week. Look for: any hardcoded values that should be env vars, any missing error handling, any component that's missing a loading state, any Supabase query missing RLS, any TypeScript any types. List everything you find and fix them one by one."</p>
     </div>
   </div>
 
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════
-     SECTION 9 — GIT TROUBLESHOOTING
-════════════════════════════════════════════════════════════════ -->
-<div class="content">
-
   <hr class="section-break">
 
   <div class="section-header">
-    <div class="section-num">9</div>
+    <div class="section-num">10</div>
     <div class="section-title">Git Troubleshooting</div>
   </div>
 
+  <div class="callout danger">
+    <div class="callout-icon">🚫</div>
+    <div class="callout-body">
+      <div class="callout-title">"Push rejected" when pushing to main</div>
+      <p class="callout-text">You should not be pushing to main directly. Create a branch and open a pull request instead — see Section 5.</p>
+    </div>
+  </div>
   <div class="callout warning">
     <div class="callout-icon">⚠️</div>
     <div class="callout-body">
-      <div class="callout-title">"Push rejected" or "failed to push"</div>
-      <p class="callout-text">Your partner pushed something after your last pull. Fix it by pulling first, then pushing again.</p>
+      <div class="callout-title">"My push to my branch was rejected"</div>
+      <p class="callout-text">Pull the branch first, then push again: <code>git pull origin your-branch-name</code> then <code>git push origin your-branch-name</code></p>
     </div>
   </div>
-
-  <div class="code-block">
-    <div class="code-bar">
-      <div class="code-dot red"></div><div class="code-dot yellow"></div><div class="code-dot green"></div>
-      <span class="code-label">terminal</span>
-    </div>
-    <div class="code-content"><span class="terminal-prompt"></span><span class="cmd">git pull origin main</span>
-<span class="terminal-prompt"></span><span class="cmd">git push origin main</span></div>
-  </div>
-
   <div class="callout danger">
     <div class="callout-icon">🚨</div>
     <div class="callout-body">
       <div class="callout-title">"CONFLICT" when pulling</div>
-      <p class="callout-text">Two people edited the same file. Do not touch anything. Message your partner — resolve it together.</p>
+      <p class="callout-text">Two people edited the same file. Stop and message your partner — resolve it together.</p>
     </div>
   </div>
-
   <div class="callout danger">
     <div class="callout-icon">🔐</div>
     <div class="callout-body">
       <div class="callout-title">"I accidentally committed .env.local"</div>
-      <p class="callout-text">Message your partner immediately. This is a security issue that needs to be handled together before the commit reaches GitHub.</p>
+      <p class="callout-text">Message your partner immediately. This is a security issue — handle it together before the commit reaches GitHub.</p>
     </div>
   </div>
-
   <div class="callout info">
     <div class="callout-icon">❓</div>
     <div class="callout-body">
       <div class="callout-title">"I don't know what state my code is in"</div>
-      <p class="callout-text">Run <code>git status</code> to see every file that has changed. Run <code>git log --oneline -10</code> to see the last 10 commits and their descriptions.</p>
+      <p class="callout-text"><code>git status</code> — shows changed files. <code>git branch</code> — shows which branch you're on. <code>git log --oneline -10</code> — shows last 10 commits.</p>
     </div>
   </div>
-
   <div class="callout warning">
     <div class="callout-icon">↩️</div>
     <div class="callout-body">
       <div class="callout-title">"I want to undo my last commit (before pushing)"</div>
-      <p class="callout-text">Run <code>git reset --soft HEAD~1</code> — this un-commits your last save but keeps all your changes. Only use this <strong>before</strong> pushing. If you've already pushed, message your partner first.</p>
+      <p class="callout-text">Run <code>git reset --soft HEAD~1</code> — un-commits your last save but keeps all changes. Only use before pushing. If already pushed, message your partner first.</p>
     </div>
   </div>
 
-</div>
+  <hr class="section-break">
 
-<!-- ═══════════════════════════════════════════════════════════
-     SECTION 10 — FILE MAP
-════════════════════════════════════════════════════════════════ -->
-<div class="page-break"></div>
-<div class="content">
-
+  <!-- S11 FILE MAP -->
   <div class="section-header">
-    <div class="section-num">10</div>
+    <div class="section-num">11</div>
     <div class="section-title">File Map — Where Things Live</div>
   </div>
-
   <table>
-    <thead>
-      <tr><th>What you're looking for</th><th>Where it is</th></tr>
-    </thead>
+    <thead><tr><th>What you're looking for</th><th>Where it is</th></tr></thead>
     <tbody>
       <tr><td>What to build next</td><td><code>PLAN.MD</code></td></tr>
       <tr><td>How the app is wired together</td><td><code>ARCHITECTURE.md</code></td></tr>
@@ -1202,7 +718,7 @@
     </tbody>
   </table>
 
-  <div style="margin-top: 40px;">
+  <div style="margin-top:36px;">
     <div class="golden-rule">
       <div class="golden-icon">🤝</div>
       <div class="golden-body">
@@ -1211,11 +727,10 @@
       </div>
     </div>
   </div>
-
 </div>
 
 <div class="footer-bar">
-  <span class="footer-logo">EDGE</span>
+  <span class="footer-logo">AI Trading Toolkit</span>
   <span>Standard Developer Procedures · github.com/ianmaser/trading-toolkit</span>
   <span>April 2026</span>
 </div>
