@@ -85,7 +85,7 @@ Prompt 13 — Signal engine:
 
 3. Combines scores into a weighted composite edge score 0–100, determines direction (long/short/neutral) and regime (trending/ranging/volatile).
 
-4. Generates stop level (ATR-based below/above recent swing low/high from the candles array), target level (2R from entry by default), expected move % (ATR / current price * 100).
+4. Generates stop level (ATR-based below/above recent swing low/high from the candles array), target level (2R from entry by default), expected move % (ATR / current price \* 100).
 
 5. Generates reasoning as two arrays: plainEnglish (e.g. 'RSI is oversold at 28, suggesting buyers may step in') and technical (e.g. 'RSI(14) = 28.3, below oversold threshold').
 
@@ -156,3 +156,19 @@ Every Friday, before you stop for the week, give Claude Code this prompt:
 "Review all the files we've built this week. Look for: any hardcoded values that should be env vars, any missing error handling, any component that's missing a loading state, any Supabase query missing RLS, any TypeScript any types. List everything you find and fix them one by one."
 
 That weekly audit keeps the codebase clean as it grows and prevents the kind of technical debt that kills projects in month two.
+
+---
+
+Stack: Next.js 14 App Router, TypeScript strict mode, Tailwind,
+shadcn/ui, Supabase, Upstash Redis, lightweight-charts, Vercel AI SDK
+
+Rules:
+
+- Always use TypeScript, never JavaScript
+- All DB queries must use Supabase with RLS — users only see their own data
+- All API inputs validated with Zod
+- All data fetching with TanStack Query
+- Streaming AI responses via Vercel AI SDK only
+- Never hardcode API keys, always use env vars
+- Mobile responsive on every component
+- Every component gets a loading skeleton and error state
