@@ -53,11 +53,11 @@ All keys needed for Phase 1 testing are now filled in:
 
 ## Left off at
 - Phase 1 code is complete and TypeScript-clean
-- **First thing next session:** resolve the port 3000 conflict
-  - Close all other Claude/dev projects
-  - Try `lsof -ti:3000 | xargs kill -9` then `npm run dev`
-  - Or restart the machine entirely for a clean slate
-- **Then test Phase 1** by hitting these URLs in the browser:
+- **Port 3000 conflict resolved** — killed the occupying process with `lsof -ti:3000 | xargs kill -9`, dev server started successfully
+- **Phase 1 API routes verified against real API keys ✅**
+- **Next session starts at Phase 2 — Watchlist (Prompt 7)**
+- ~~First thing next session: resolve the port 3000 conflict~~
+- ~~Then test Phase 1 by hitting these URLs in the browser:~~
   - `http://localhost:3000/api/market/quote?symbol=AAPL`
   - `http://localhost:3000/api/market/candles?symbol=NVDA&timeframe=1D&from=2024-01-01&to=2024-12-31`
   - `http://localhost:3000/api/market/quote?symbols=NVDA,AAPL,TSLA`
@@ -71,4 +71,4 @@ All keys needed for Phase 1 testing are now filled in:
 
 ## Open questions
 - Next.js 16 middleware.ts → proxy.ts rename: still unresolved, flagged before Phase 3
-- DB migration: `supabase/migrations/001_initial.sql` has been written but not yet run against the live Supabase project — needs to be applied before auth and any DB features can be tested
+- ~~DB migration: `supabase/migrations/001_initial.sql` has been written but not yet run against the live Supabase project~~ — **RESOLVED**: migration applied, all 7 tables confirmed in Supabase Table Editor ✅
