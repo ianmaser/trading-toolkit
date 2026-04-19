@@ -60,14 +60,19 @@ Ian
 - `A listener indicated an asynchronous response...` — also a browser extension error. Not our code.
 
 ## What is NOT finished yet
-- Phase 2 is fully working and verified against real API keys ✅
-- No tests written yet for Phase 2 — to be done before moving to Phase 3
+- Nothing — Phase 2 is fully complete, verified, and tested ✅
 
 ## Left off at
 - Phase 2 complete ✅
 - **Next session starts at Phase 3, Prompt 8 — Candlestick Chart**
 - Build `<CandlestickChart>` component using `lightweight-charts`
 - Read `PLAN.MD` Prompt 8 before starting
+
+## Tests written
+- `__tests__/services/marketDataDetails.test.ts` — 7 tests for `getTickerDetails` (cache hit, uppercase, Polygon fetch, caching, error cases)
+- `__tests__/api/market/details.test.ts` — 7 tests for `GET /api/market/details` (200, 400, 502, 500, call args)
+- `__tests__/hooks/useWatchlist.test.ts` — 7 tests for `useWatchlist` (fetch, loading, error, add with user_id, uppercase, remove, unauthenticated guard)
+- **75/75 tests passing across 8 test files** ✅
 
 ## Decisions made
 - Company name fetched via `getTickerDetails` (Polygon reference endpoint) rather than storing in DB — avoids schema changes, correctly cached 24h in Redis
