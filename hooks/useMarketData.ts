@@ -85,6 +85,23 @@ export function useWatchlistQuotes(symbols: string[]) {
   })
 }
 
+export function useTickerDetails(symbol: string) {
+  return useQuery<TickerInfo, Error>({
+    queryKey: ['details', symbol],
+    queryFn: async () => {
+      const res = await fetch(`/api/market/details?symbol=${encodeURIComponent(symbol)}`)
+      if (!res.ok) {
+        const { error } = await res.json()
+        throw new Error(error ?? 'Failed to fetch ticker details')
+      }
+      return res.json()
+    },
+    enabled: Boolean(symbol),
+    staleTime: 24 * 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  })
+}
+
 export function useTickerSearch(query: string) {
   return useQuery<TickerInfo[], Error>({
     queryKey: ['search', query],
