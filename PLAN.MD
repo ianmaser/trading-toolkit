@@ -72,7 +72,9 @@ Prompt 11 — Strategy parser:
 
 Prompt 12 — Backtest Lab page:
 
-"Build the Backtest Lab at app/dashboard/backtest/page.tsx. It has two states: INPUT and RESULTS. Input state: the <StrategyBuilder> component with the prompt input and visual builder side by side, a ticker input, date range picker, and a 'Run Backtest' button. On submit it calls /api/backtest which proxies to the Python service, shows a progress animation. Results state: equity curve (recharts LineChart), a stats grid (win rate, expectancy, profit factor, max drawdown, total trades), a regime breakdown table, a trade log table with each trade's details. A 'Save as Playbook' button opens a modal to name it and save to Supabase. A 'Run on More Tickers' button that batch-runs the same strategy across a list of symbols. Below results, show an AI analysis from BULL-E: 'Here's what these results mean and whether this edge looks real or overfitted' — streamed inline."
+"Build the Backtest Lab at app/dashboard/backtest/page.tsx. It has two states: INPUT and RESULTS. Input state: the <StrategyBuilder> component with the prompt input and visual builder side by side, a ticker input, date range picker, and a 'Run Backtest' button. On submit it calls /api/backtest which proxies to the Python service, shows a progress animation. Results state: equity curve (recharts LineChart), a stats grid (win rate, expectancy, profit factor, max drawdown, total trades), a regime breakdown table, a trade log table with each trade's details. A 'Save as Playbook' button opens a modal to name it and save to Supabase. A 'Run on More Tickers' button that batch-runs the same strategy across a list of symbols. Below results, show an AI analysis from BULL-E: 'Here's what these results mean and whether this edge looks real or overfitted' — streamed inline.
+
+"
 
 Phase 5 — Signal Engine (Days 8–9)
 Prompt 13 — Signal engine:
@@ -93,49 +95,141 @@ Prompt 13 — Signal engine:
 
 Do not install or import any JavaScript indicator library — all indicator math lives in the Python service. Add a /api/signals/[symbol] route that calls generateSignal and saves the result to the Supabase signals table. The route must call checkSignalsRateLimit(userId) from lib/rateLimit.ts before doing any work — if the limit is exceeded, return a 429 with the message from the result. Limit: 60 signal requests per user per hour."
 
-Prompt 14 — Pattern detector:
-
-"Create services/patternDetector.ts. Implement detection for: head and shoulders (and inverse), double top and bottom, bull and bear flags, rising and falling wedges. Each detector takes a Candle[] array and returns PatternMatch[] with: patternType, confidence 0-1, keyPoints (candle indices of the key structural points), zone (priceMin, priceMax, timeStart, timeEnd), plainEnglishDescription, technicalDescription. Only return matches above 0.65 confidence. Connect this to the ticker page — pass the matches as annotations to the CandlestickChart and populate the pattern sidebar. Add click handlers that call scrollToTime on the chart ref."
+Prompt 14 — Pattern detector: POST-MVP — see TODO/post-mvp.md
 
 Phase 6 — BULL-E (Days 10–11)
 Prompt 15 — BULL-E chat:
 
-"Build the BULL-E chat drawer at components/features/BullEChat.tsx. It's a sliding panel that opens from the bottom right. Use the Vercel AI SDK useChat hook connected to /api/chat. Build the /api/chat route using the Anthropic provider with claude-sonnet-4-20250514, streaming enabled, web search tool enabled. The /api/chat route must call checkChatRateLimit(userId) from lib/rateLimit.ts before streaming — if the limit is exceeded, return a 429 JSON response with the message from the result. Limit: 20 AI requests per user per hour. The system prompt should: position BULL-E as a professional trading analyst and coach, inject the user's current context on every request (currently viewed ticker, its latest signal, detected patterns, user's language_mode preference, their account_size, their last 5 journal trades, their best performing playbook stats). The system prompt should adapt language based on language_mode — plain English or technical. Show a typing indicator during streaming. Persist chat history in localStorage per ticker session. Add a 'Clear chat' button. In BullEChat.tsx, handle the 429 response from useChat's onError callback: when the error message contains the rate limit text, replace the chat input area with a friendly 'BULL-E needs a breather 🐂' state showing the retry-after time and a disabled input. Dismiss automatically when the time elapses."
+"Build the BULL-E chat drawer at components/features/BullEChat.tsx. It's a sliding panel that opens from the bottom right. Use the Vercel AI SDK useChat hook connected to /api/chat. Build the /api/chat route using the Anthropic provider with claude-sonnet-4-20250514, streaming enabled, web search tool enabled.
 
-Prompt 16 — Inline AI commentary:
+Rate limiting (plan-aware): The /api/chat route must check the user's plan_tier from the profiles table. Call checkChatRateLimit(userId, planTier) from lib/rateLimit.ts before streaming — Starter tier: 5 messages per day; Pro tier: 300 per day (effectively unlimited); Advisor tier: 300 per day with priority queue. If the limit is exceeded, return a 429 JSON response with the message from the result. In BullEChat.tsx, handle the 429 response from useChat's onError callback: when the error message contains the rate limit text, replace the chat input area with a friendly 'BULL-E needs a breather 🐂' state showing the retry-after time and a disabled input. Dismiss automatically when the time elapses.
 
-"Add BULL-E commentary throughout the app. On the ticker page: a 'Summarize Setup' button in the signal card that streams a BULL-E analysis of the current signal and patterns into an expandable panel below. On the backtest results page: an 'Explain Results' button that gives a plain-English or technical interpretation of the backtest stats. On each pattern in the pattern sidebar: a 'What does this mean?' tooltip that generates a short explanation on hover with a single non-streaming API call. All of these inject the relevant data as context to Claude. Reuse a shared <BullEInlineResponse> streaming component."
+BULL-E context (MVP): The system prompt assembled server-side before every Claude API call must include: (1) currently viewed ticker, its latest signal; (2) user's language_mode preference, account_size, and trader_assessment responses from onboarding; (3) last 5 journal trades with outcomes, emotion scores, and mistake types; (4) best performing playbook stats and active playbook rules; (5) user's last post-session reflection and key lesson. This gives BULL-E enough context to coach specifically — not generically. Thesis-aware context (macro/sector/position theses) is a post-MVP addition that activates when the Living Macro Thesis UI ships.
+
+Language adaptation: The system prompt adapts based on language_mode — plain English or technical. Show a typing indicator during streaming. Persist chat history in localStorage per ticker session. Add a 'Clear chat' button.
+
+BULL-E coaching style: The system prompt must instruct BULL-E to lead with a focused question before dispensing observations. When a user mentions a trade, a bad session, or an emotional state, BULL-E's first response must be a reflective follow-up question ('What was the first trade that felt off today?' / 'What were you thinking when you sized up on that position?' / 'Was this in your playbook or a deviation?') before offering analysis. This 'mirror and mentor' approach — reflecting the trader's own patterns back through questions — builds a coaching relationship rather than a one-way advice engine. The system prompt should include explicit non-judgmental framing: BULL-E never criticises, only asks and observes. Add a visible tag line in the chat drawer UI directly below the BULL-E header in muted caption style: 'Remembers your last 30 trades, your playbook rules, and your onboarding profile' — making the personalization advantage explicit to the user."
+
+Prompt 16 — Inline AI commentary: POST-MVP — see TODO/post-mvp.md
 
 Phase 7 — Trade Journal (Days 12–13)
 Prompt 17 — Journal entry:
 
-"Build the trade journal at app/dashboard/journal/page.tsx. It should: show a list of past journal entries sorted by date, each showing symbol, direction, outcome badge (win/loss/breakeven), R-multiple achieved, and which playbook was used. A 'Log Trade' button opens a modal with: symbol input, direction toggle, entry/exit price inputs (R-multiple auto-calculated), size input, playbook selector (from user's saved playbooks), emotion/confidence slider 1-5 with emoji labels (😰 to 😎), and a notes textarea. On save, insert to journal_trades table. Add a paper trading toggle — when active, trades are flagged as simulated and shown with a 'Paper' badge."
+"Build the trade journal at app/dashboard/journal/page.tsx. It should: show a list of past journal entries sorted by date, each showing symbol, direction, outcome badge (win/loss/breakeven), R-multiple achieved, and which playbook was used. A 'Log Trade' button opens a modal with: symbol input, direction toggle, entry/exit price inputs (R-multiple auto-calculated), size input, playbook selector (from user's saved playbooks), emotion/confidence slider 1-5 with emoji labels (😰 to 😎), and a notes textarea. On save, insert to journal_trades table. Add a paper trading toggle — when active, trades are flagged as simulated and shown with a 'Paper' badge.
+
+Competitive additions (MVP):
+
+(1) Pre-trade checklist — each playbook can define a checklist of entry conditions (e.g. 'Price above VWAP', 'Volume confirming', 'Setup matches daily bias'). When logging a trade linked to a playbook, show those checklist items as checkboxes. Store adherence_score (checked / total) on the journal_trades row. This feeds BULL-E's coaching report to identify rule-breaking patterns.
+
+(2) Mistake type — an optional dropdown in the modal: 'No mistake', 'Entry too early', 'Entry too late', 'Exited too early', 'Exited too late', 'Wrong position size', 'No edge — broke playbook'. Store as mistake_type text on journal_trades.
+
+Add these columns to journal_trades via a new migration (supabase/migrations/002_journal_additions.sql): adherence_score numeric, mistake_type text. Also create in this migration: daily_journal table (id, user_id, date date, morning_plan_id uuid nullable FK to daily_plans, reflection text, key_lesson text, created_at, updated_at) with RLS; daily_plans table (user_id, date date, max_loss numeric, max_trades integer, setups_text text, rules_json jsonb, created_at) with RLS. Note: MAE/MFE fields and PropFirm Sync are post-MVP — see TODO/post-mvp.md.
+
+Post-Session Journal: Add an 'End of Day' section to the journal page below the trade log. Two fields: (1) 'What happened today' — free-form reflection textarea; (2) 'Key lesson' — constrained to 140 characters (forces distillation: 'I need to stop averaging into losing positions'). Link to the day's morning game plan so the user sees what they planned vs what they did. Show a 'Reflection not written yet' empty state with a prompt. BULL-E's coaching report reads both the morning plan and evening reflection, completing the full loop: game plan → trade → reflection → coaching."
+
+Prompt 17b — Trade Replay: POST-MVP — see TODO/post-mvp.md
 
 Prompt 18 — AI coaching analysis:
 
-"Create a weekly coaching analysis feature. Build /api/coaching-report that: fetches the user's last 30 journal trades from Supabase, fetches their playbook stats, calls the Claude API (non-streaming, full analysis) with all the data and a system prompt that instructs Claude to act as a trading coach and find behavioral patterns — specifically look for: early exits on winners, late exits on losers, day-of-week performance patterns, emotion score correlation with outcome, system adherence rate (trades that matched a playbook vs impulsive trades), regime mismatches. Return structured JSON with findings and recommendations. Build a <CoachingReport> component on the Performance page that displays this as a readable report with BULL-E's name on it. Cache the report for 24 hours."
+"Create a weekly coaching analysis feature. Build /api/coaching-report that: fetches the user's last 30 journal trades from Supabase (including adherence_score and mistake_type fields), fetches their playbook stats, fetches the last 7 daily_plans rows, fetches the last 7 daily_journal rows (post-session reflections and key lessons), calls the Claude API (non-streaming, full analysis) with all the data and a system prompt that instructs Claude to act as a trading coach and find behavioral patterns — specifically look for: day-of-week performance patterns, emotion score correlation with outcome, system adherence rate (trades that matched a playbook vs impulsive trades), most common mistake types and their R cost, game plan adherence (did actual trades match the pre-session plan), patterns between evening reflections and next-day performance. Return structured JSON with findings and actionable recommendations. Build a <CoachingReport> component on the Performance page that displays this as a readable report with BULL-E's name on it. Cache the report for 24 hours."
 
 Phase 8 — Performance Dashboard (Day 14)
 Prompt 19 — Performance page:
 
-"Build the Performance dashboard at app/dashboard/performance/page.tsx. Sections: (1) Header stats row — total trades, overall win rate, average R-multiple, system adherence %. (2) Equity curve — recharts LineChart of cumulative R over time, with a benchmark line showing what the backtest predicted. (3) Playbook breakdown table — for each saved playbook: trades taken, win rate, avg R, vs backtest expectation, trend arrow. (4) Behavioral insights panel — render the <CoachingReport> component with BULL-E's weekly analysis. (5) Calendar heatmap — show P&L by day of week and time of day as a grid heatmap using recharts. All data from Supabase, filtered by date range selector (1W / 1M / 3M / All)."
+"Build the Performance dashboard at app/dashboard/performance/page.tsx. Sections: (1) Header stats row — total trades, overall win rate, average R-multiple, system adherence %. (2) Equity curve — recharts LineChart of cumulative R over time, with a benchmark line showing what the backtest predicted. (3) Playbook breakdown table — for each saved playbook: trades taken, win rate, avg R, vs backtest expectation, trend arrow. (4) Behavioral insights panel — render the <CoachingReport> component with BULL-E's weekly analysis. (5) Calendar heatmap — show P&L by day of week and time of day as a grid heatmap using recharts. All data from Supabase, filtered by date range selector (1W / 1M / 3M / All).
+
+Note: P&L calendar, mistake breakdown panel, MAE/MFE exit quality panel, and Trader Health Score are POST-MVP — see TODO/post-mvp.md."
 
 Phase 9 — Daily Brief (Day 15)
 Prompt 20 — Daily brief:
 
-"Build the home page at app/dashboard/page.tsx — the Daily Brief. It should: (1) Generate once per day (cached in Redis with a date key) by calling Claude with web search enabled, instructed to: assess the current market regime based on SPY/QQQ/VIX data, identify which strategy types have edge in the current regime, and write a 3-paragraph analyst-style morning note. Display this with BULL-E's avatar and name. (2) Below the brief, show the user's watchlist ranked by edge score — highest edge signals at the top with their direction and confidence. (3) Show a 'Your system is a match for today's regime' or 'Caution: today's regime conflicts with your primary playbook' banner based on comparing the detected regime against the user's top playbook. (4) Show the user's 3 most recent journal entries and the coaching insight of the week."
+"Build the home page at app/dashboard/page.tsx — the Daily Brief. It should: (1) Generate once per day (cached in Redis with a date key) by calling Claude with web search enabled, instructed to: assess the current market regime based on SPY/QQQ/VIX data, identify which strategy types have edge in the current regime, and write a 3-paragraph analyst-style morning note. Display this with BULL-E's avatar and name. (2) Below the brief, show the user's watchlist ranked by edge score — highest edge signals at the top with their direction and confidence. (3) Show a 'Your system is a match for today's regime' or 'Caution: today's regime conflicts with your primary playbook' banner based on comparing the detected regime against the user's top playbook. (4) Show the user's 3 most recent journal entries and the coaching insight of the week.
 
-Phase 10 — Polish + Settings (Day 16)
+Competitive addition (informed by TraderSync gap analysis):
+
+(5) Pre-session game plan — below the daily brief, show a collapsible 'Today's Game Plan' section. It has: a max loss input (pre-filled from user profile if set), a max trades input, a 'Setups I'm watching' free-text area, and a 'Rules I'm committing to today' checklist (pre-populated from the user's active playbook's entry checklist). On save, store the game plan in a daily_plans table (user_id, date, max_loss, max_trades, setups_text, rules_json). The coaching report will later compare actual trades against the game plan to detect discipline patterns. This differentiates EDGE from every competitor — no trading journal currently offers pre-session structured planning tied directly to your playbook rules."
+
+Phase 10 — Living Macro Thesis DB Schema (Day 16)
+The Living Macro Thesis is the most defensible long-term differentiator. The UI is post-MVP (see TODO/post-mvp.md), but the DB tables ship at MVP launch so thesis data starts compounding from day one. BULL-E thesis-aware context activates when the UI ships.
+
+Prompt 23 — Living Macro Thesis DB migration only:
+
+"Create supabase/migrations/002_living_thesis.sql. This migration creates the thesis schema and adds plan_tier support — no UI is built in this phase.
+
+CREATE TABLE macro_theses (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users NOT NULL,
+  title text NOT NULL,
+  content text NOT NULL,
+  regime text,
+  is_active boolean DEFAULT true,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+CREATE TABLE sector_theses (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users NOT NULL,
+  macro_thesis_id uuid REFERENCES macro_theses NOT NULL,
+  sector text NOT NULL,
+  direction text,
+  content text NOT NULL,
+  flagged_for_review boolean DEFAULT false,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+CREATE TABLE position_theses (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users NOT NULL,
+  sector_thesis_id uuid REFERENCES sector_theses,
+  journal_trade_id uuid REFERENCES journal_trades,
+  symbol text NOT NULL,
+  content text NOT NULL,
+  flagged_for_review boolean DEFAULT false,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+Enable RLS on all three tables restricting all operations to auth.uid() = user_id.
+
+Also add via this migration:
+- thesis_context text column to journal_trades (free-text note linking a trade to the macro thesis at log time — shown as an optional field in the journal modal)
+- plan_tier text column to profiles with check constraint ('starter', 'pro', 'advisor'), default 'starter'
+
+Apply the migration. Confirm all 3 tables appear in Supabase Table Editor with RLS enabled. No page, no hooks, no UI — data layer only."
+
+Phase 11 — Polish + Settings (Day 17)
 Prompt 21 — Settings:
 
-"Build the settings page at app/dashboard/settings/page.tsx. Sections: Account (display name, email, change password), Trading Preferences (account size input that updates profile, language mode toggle plain/technical that updates profile and immediately affects all BULL-E responses and signal cards), Appearance (light/dark mode toggle). All form saves with optimistic updates and toast confirmations using shadcn/ui Toast."
+
+"Build the settings page at app/dashboard/settings/page.tsx. Sections:
+
+(1) Account — display name, email, change password.
+(2) Trading Preferences — account size input that updates profile, language mode toggle plain/technical that updates profile and immediately affects all BULL-E responses and signal cards.
+(3) Appearance — light/dark mode toggle.
+(4) Plan & Billing — show the user's current plan_tier from profiles (Starter / Pro / Advisor) with a tier badge. Below the badge show the key limits for their tier in a clear table: journal trades per month (30 for Starter, unlimited for Pro/Advisor), BULL-E messages per day (5 for Starter, 300 for Pro/Advisor), watchlist size (5 tickers for Starter, unlimited for Pro/Advisor), Living Thesis access (locked for Starter, full for Pro/Advisor), Backtest Lab access (locked for Starter, full for Pro/Advisor). If the user is on Starter, show a prominent 'Upgrade to Pro — $39/mo' button that links to process.env.NEXT_PUBLIC_STRIPE_CHECKOUT_URL (never hardcode). If on Pro, show 'Upgrade to Advisor — $99/mo' with process.env.NEXT_PUBLIC_STRIPE_ADVISOR_URL. Note: plan_tier can be set manually in Supabase for development and testing; Stripe webhook integration is a post-launch task.
+
+All form saves with optimistic updates and toast confirmations using shadcn/ui Toast."
 
 Prompt 22 — Final polish:
 
-"Audit every page in the app. For each page and major component: add a loading skeleton using shadcn/ui Skeleton that matches the layout of the loaded state, add an error boundary with a retry button, add empty states with helpful context-aware prompts (e.g. empty watchlist says 'Add your first ticker to get signals and start tracking your edge'), ensure every interactive element has an aria-label, test and fix all mobile layouts at 375px width. Run through the full user journey: signup → add ticker → run backtest → save playbook → log a trade → view performance → read daily brief. Fix any broken handoffs."
+"Audit every page in the app. For each page and major component: add a loading skeleton using shadcn/ui Skeleton that matches the layout of the loaded state, add an error boundary with a retry button, add empty states with helpful context-aware prompts (e.g. empty watchlist says 'Add your first ticker to get signals and start tracking your edge'), ensure every interactive element has an aria-label, test and fix all mobile layouts at 375px width. Run through the full user journey: signup → add ticker → run backtest → save playbook → log a trade → view performance → read daily brief. Fix any broken handoffs.
+
+Competitive addition (informed by AITradingCoach analysis — ships before their planned v2 Trader Assessment Module):
+
+Trader Assessment onboarding: On first login after account creation, check profiles.has_completed_onboarding (boolean, default false). If false, intercept the dashboard and render a full-screen onboarding assessment before the main UI loads. Five steps with large visual card-style answer selections (not dropdowns — one choice per step, full-screen focus):
+
+Step 1 — Trading style: Day trader / Swing trader / Position trader / Still figuring it out
+Step 2 — Primary asset class: Stocks / Options / Futures / Forex / Crypto
+Step 3 — Experience level: New (under 1 year) / Learning (1–3 years) / Experienced (3+ years) / Professional
+Step 4 — Biggest self-identified weakness: FOMO entries / Exiting too early / Revenge trading / Position sizing / Sticking to my plan / No clear edge yet
+Step 5 — Primary goal: Build consistency / Pass a prop firm challenge / Grow a live account / Deeply understand my edge
+
+On completion: save all responses as a trader_assessment jsonb column on profiles, set has_completed_onboarding=true, then load the dashboard. The first thing shown on the dashboard is a personalized BULL-E welcome: 'Hey — based on what you told me, your biggest focus should be [weakness]. Here's where we'll start.' BULL-E's system prompt always includes the trader_assessment object so every coaching session is personalized from day one, even before any trades are logged.
+
+Add has_completed_onboarding boolean (default false) and trader_assessment jsonb (nullable) to the profiles table via a migration in this phase."
 
 The Order of Operations Summary
-The sequence in one line each:
+The sequence in one line each (MVP scope):
 
 Foundation + auth + DB schema — nothing works without this
 Market data service + hooks — feeds every feature
@@ -143,12 +237,13 @@ Watchlist — first real UI, establishes component patterns
 Ticker page shell + chart — the app's center of gravity
 Python backtest service — isolated, testable, no UI dependencies
 Strategy parser + Backtest Lab UI — connects Python service to frontend
-Signal engine + pattern detector — connects to ticker page
-BULL-E chat + inline commentary — wraps all features with AI layer
-Trade journal — needs signals and playbooks to exist first
+Signal engine — connects to ticker page (pattern detector is post-MVP)
+BULL-E chat — wraps all features with AI layer (inline commentary is post-MVP)
+Trade journal + post-session journal — needs signals and playbooks to exist first (trade replay is post-MVP)
 Performance dashboard — needs journal data to exist first
 Daily brief — needs everything to exist first
-Settings + polish — last, always last
+Living Macro Thesis DB migration — tables deploy now so data compounds; UI is post-MVP
+Settings + polish + Trader Assessment onboarding — last, always last
 
 One Final Rule
 Every Friday, before you stop for the week, give Claude Code this prompt:
