@@ -126,3 +126,83 @@ Full product spec: `ARCHITECTURE.md` (technical) · `PLAN.MD` (22-prompt build p
 | 9     | Performance dashboard                                      | ⬜      |
 | 10    | Daily brief                                                | ⬜      |
 | 11    | Settings + polish                                          | ⬜      |
+
+## Code Documentation Standards
+
+### Inline Comments
+
+Every file must be thoroughly commented. Follow these rules:
+
+**For every function or hook:**
+
+- Add a comment block above it explaining: what it does, what each parameter is, and what it returns
+- If the function uses a library or framework concept that isn't standard JavaScript/TypeScript, add a plain-English explanation of what that concept is and why it's being used here
+
+**For every non-obvious line or block:**
+
+- Comment anything that isn't immediately readable plain English
+- If you're using a design pattern (debounce, memoization, optimistic update, etc.), name it and explain why it's there
+- If you're using a library-specific API (Supabase RLS, TanStack Query's staleTime, Zustand slices, Vercel AI SDK useChat, etc.), explain what that API does in plain English in a comment above it
+
+**For every TypeScript type or interface:**
+
+- Add a comment explaining what this type represents in the real world and where it gets used
+
+**Tone of comments:**
+
+- Write as if explaining to a developer who is competent in JavaScript but has never seen this specific library or pattern before
+- Never assume the reader knows what a framework-specific term means
+- Prefer over-commenting to under-commenting on this project
+
+---
+
+### Per-File Documentation (.md)
+
+Every time you create or significantly modify a component file or feature file, you must also create or update a companion `.md` file in the same directory with the same base name.
+
+**Example:**
+
+- `components/features/CandlestickChart.tsx` → `components/features/CandlestickChart.md`
+- `services/signalEngine.ts` → `services/signalEngine.md`
+- `hooks/useMarketData.ts` → `hooks/useMarketData.md`
+
+**The .md file must contain:**
+
+FILE: [filename]
+LAST UPDATED: [date]
+WHAT THIS FILE DOES:
+2-4 sentences. Plain English. What is the purpose of this file in the context
+of the app? What problem does it solve?
+HOW IT WORKS (step by step):
+Walk through the logic of this file from top to bottom as if explaining it to
+someone who has never seen it. Number each step. Explain any library or
+framework concepts in plain English when they first appear. Do not assume
+knowledge of React internals, Next.js conventions, Supabase, TanStack Query,
+or any other library.
+KEY CONCEPTS USED:
+List each library or pattern used in this file. For each one write 1-2 sentences
+explaining what it is and why it was chosen for this specific use case.
+INPUTS AND OUTPUTS:
+What does this file receive (props, parameters, env vars, API responses)?
+What does it produce (return values, UI, database writes, API calls)?
+WHAT TO CHECK IF SOMETHING BREAKS:
+List the most likely failure points and what to look at first when debugging.
+DEPENDENCIES:
+List every import that comes from an external library (not our own files) and
+explain in one line what that library does.
+
+### When This Rule Applies
+
+- Every new component file
+- Every new service or hook file
+- Every API route file
+- Any existing file that gets meaningfully changed (not just a one-line fix)
+
+### What Good Looks Like
+
+If someone who understands JavaScript but has never used Next.js, Supabase, or
+TanStack Query can read the .txt file and the commented code and understand
+exactly what is happening and why — the documentation is sufficient.
+
+If they would still be confused about what a library call is doing or why a
+pattern was chosen — it needs more detail.
