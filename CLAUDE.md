@@ -115,12 +115,12 @@ Full product spec: `ARCHITECTURE.md` (technical) · `PLAN.MD` (22-prompt build p
 | Phase | Feature                                                    | Status  |
 | ----- | ---------------------------------------------------------- | ------- |
 | 0     | Foundation — scaffold, DB schema, auth, app shell          | ✅ Done |
-| 1     | Market data service + TanStack Query hooks                 | ⬜ Next |
-| 2     | Watchlist page                                             | ⬜      |
-| 3     | Institutional data service, candlestick chart, ticker page | ⬜      |
-| 4     | Python backtest service (Railway)                          | ⬜      |
-| 5     | Strategy parser + Backtest Lab UI                          | ⬜      |
-| 6     | Signal engine + pattern detector                           | ⬜      |
+| 1     | Market data service + TanStack Query hooks                 | ✅ Done |
+| 2     | Watchlist page                                             | ✅ Done |
+| 3     | Institutional data service, candlestick chart, ticker page | ✅ Done |
+| 4     | Python backtest service + hardening + price action engine  | ✅ Done |
+| 5     | Strategy parser + Backtest Lab UI                          | ✅ Done |
+| 6     | Signal engine + pattern detector                           | ⬜ Next |
 | 7     | BULL-E chat + inline commentary                            | ⬜      |
 | 8     | Trade journal                                              | ⬜      |
 | 9     | Performance dashboard                                      | ⬜      |

@@ -190,6 +190,107 @@ Displayed as a circular gauge with color gradient (0–40 red / 41–70 amber / 
 
 ---
 
+---
+
+## 13. Monte Carlo Simulation
+
+**What it is:** Run the backtest strategy's trade results through 1,000+ randomized simulations by shuffling trade order, then report the distribution of outcomes — median final equity, 5th percentile worst case, 95th percentile best case, probability of ruin (drawdown exceeding X%). Displayed as a fan chart (recharts area chart with confidence bands) alongside the equity curve.
+
+**Why it matters:** A single backtest result means almost nothing in isolation — a lucky sequence of wins can make a bad strategy look great. Monte Carlo exposes this. It is the single most important overfitting signal a retail trader can have access to. Sophisticated traders know to ask "what does the distribution look like?" before trusting any backtest.
+
+**Scope:** Medium effort. Server-side in the Python service — add a POST `/monte-carlo` endpoint that accepts trade results (array of R multiples) and n_simulations (default 1000). Shuffle and cumsum each simulation. Return percentile arrays. Display in Backtest Lab results as a new chart below the equity curve.
+
+**Where it fits when built:** Phase 4 (Backtest Lab) — Prompt 12 addition.
+
+---
+
+## 14. Walk-Forward Testing
+
+**What it is:** Proper out-of-sample validation. Split the date range into rolling windows — optimize (or just test) on the first N months, test on the following M months, roll forward, repeat. Report in-sample vs out-of-sample stats side by side. Flag when out-of-sample performance degrades significantly vs in-sample.
+
+**Why it matters:** The only honest way to test if a strategy has a real edge vs curve-fitted noise. Every professional quant uses walk-forward. Showing a user their strategy has a 60% win rate in-sample but 42% out-of-sample is more valuable than any single backtest result.
+
+**Scope:** Medium-high effort. Python service addition — parameterized window sizes (train_months, test_months). Returns a list of windows, each with in-sample and out-of-sample stats. Dedicated results section in the Backtest Lab UI.
+
+**Where it fits when built:** Phase 4 (Backtest Lab) — Prompt 12 addition.
+
+---
+
+## 15. Dollar P&L and Position Sizing
+
+**What it is:** Replace or supplement R-multiple tracking with real dollar P&L. User inputs account size and position sizing method (fixed fractional: risk X% per trade, fixed dollar: risk $X per trade). System calculates actual shares/contracts, real entry/exit dollar amounts, and true account equity curve in dollars. Equity curve shows both R curve and dollar curve.
+
+**Why it matters:** R multiples are useful for strategy evaluation but traders need to see real numbers to understand if a strategy is viable for their account size. "0.4R expectancy" is abstract — "$840 expected per trade on a $50k account risking 1%" is concrete and actionable.
+
+**Scope:** Medium effort. Python service + UI additions. New fields on StrategyConfig: account_size, position_sizing_method enum (fixed_fractional | fixed_dollar), risk_per_trade. Add dollar P&L fields to BacktestTrade and BacktestResult.
+
+**Where it fits when built:** Phase 4 (Backtest Lab) — Prompt 12 addition.
+
+---
+
+## 16. Benchmark Comparison
+
+**What it is:** Run a passive buy-and-hold benchmark (default: SPY, configurable) over the same date range and overlay its equity curve on the backtest equity curve. Report alpha (strategy return minus benchmark return), beta (correlation of daily returns to benchmark), and a simple "Beat benchmark: Yes/No" badge.
+
+**Why it matters:** A strategy with 8% annual return sounds good until you realize SPY returned 26% that year. Every backtest result needs this context. No serious performance report omits a benchmark.
+
+**Scope:** Low effort. Fetch SPY OHLCV for the same period (already have the data service), compute buy-and-hold return, add to results. Recharts second line on equity curve chart.
+
+**Where it fits when built:** Phase 4 (Backtest Lab) — Prompt 12 addition.
+
+---
+
+## 17. Advanced Backtest Statistics (Sharpe Ratio Variants + R-Squared)
+
+**What it is:** Additional professional-grade statistics: Sortino ratio (like Sharpe but only penalizes downside volatility), Calmar ratio (annualized return / max drawdown), R-squared of equity curve (how linear/consistent is growth — 1.0 is perfectly linear, 0.0 is random noise), monthly P&L breakdown table, time in market %.
+
+**Why it matters:** These metrics are standard in every serious fund's tearsheet. Adding them positions EDGE as a professional tool rather than a retail toy. Sharpe is already in MVP — Sortino, Calmar, and R-squared are its natural companions.
+
+**Scope:** Low effort — pure math on existing trade data in the Python service. UI additions to the Backtest Lab stats section.
+
+**Where it fits when built:** Phase 4 (Backtest Lab) — Prompt 10b follow-up.
+
+---
+
+## 18. Time-Based Exits
+
+**What it is:** An additional exit type in StrategyConfig: exit a trade after N bars if neither target nor stop has been hit. Useful for mean-reversion strategies that expect the move to complete within a set timeframe (e.g., "exit after 5 bars regardless").
+
+**Why it matters:** Many systematic mean-reversion strategies use time stops as a primary exit. Without this, those strategies can't be tested at all. Combined with trailing stops it covers virtually every exit methodology used in retail systematic trading.
+
+**Scope:** Low effort — one additional exit check in the Python service's simulation loop. Add max_bars_in_trade (int, optional) to StrategyConfig.
+
+**Where it fits when built:** Phase 4 — add to Prompt 10b or as a standalone mini-prompt.
+
+---
+
+## 19. Multi-Timeframe Condition Filtering
+
+**What it is:** Allow backtest conditions to reference a higher timeframe. Example: "Only take longs on the 1H timeframe if the daily EMA_20 is above EMA_50." Implemented as an optional higher_timeframe filter on StrategyConfig — fetch both timeframes, downsample the higher one to align bars, evaluate the filter conditions on the higher timeframe before allowing the primary conditions to fire.
+
+**Why it matters:** The majority of professional discretionary and systematic strategies use multi-timeframe confluence. A trend-following strategy that doesn't filter by daily bias has far lower win rates. Without this, the backtester can't replicate most real-world setups.
+
+**Scope:** High effort. Requires fetching and aligning two separate OHLCV datasets, computing indicators on both, and cross-referencing at each bar. Significant Python service and schema additions.
+
+**Where it fits when built:** Phase 5 (Signal Engine) — companion to the signal engine's own multi-timeframe logic.
+
+---
+
+## 20. Additional Indicators (Williams %R, OBV, Pivot Points)
+
+**What it is:** Three indicator additions to the Python service:
+- **Williams %R:** Momentum oscillator (-100 to 0). Oversold below -80, overbought above -20. pandas-ta: `ta.willr()`.
+- **OBV (On Balance Volume):** Cumulative volume indicator showing buying/selling pressure. pandas-ta: `ta.obv()`.
+- **Pivot Points:** Daily/weekly classic pivot points (PP, R1, R2, R3, S1, S2, S3). Require daily OHLCV regardless of backtest timeframe; snap to each trading session.
+
+**Why it matters:** Williams %R and OBV are staples for many traders, especially options traders and volume-profile-based traders. Pivot points are the most widely used support/resistance levels in intraday trading. Adding them opens the backtester to a large additional audience.
+
+**Scope:** Low-medium effort for W%R and OBV (one pandas-ta call each). Medium effort for Pivot Points (requires session-based calculation separate from the main indicator loop).
+
+**Where it fits when built:** Phase 4 (Backtest Lab) — add alongside or after Prompt 10b.
+
+---
+
 ## Notes
 
 - **Ship order:** CSV Export → Advanced Performance Panels (P&L Calendar + Mistake Breakdown) → MAE/MFE Tracking → Living Macro Thesis UI → everything else.
@@ -199,3 +300,5 @@ Displayed as a circular gauge with color gradient (0–40 red / 41–70 amber / 
 - Trader Health Score and Cross-Analysis are "Power User" additions — ship after initial retention data shows what users actually want.
 - Living Macro Thesis UI is the highest-value post-MVP feature long-term (competitive moat). Prioritize after the base product has traction.
 - Revisit this list after Phase 11 (Settings + Polish) is complete.
+- **Backtest post-MVP ship order:** Benchmark Comparison (quickest) → Time-Based Exits → Dollar P&L + Position Sizing → Monte Carlo → Walk-Forward → Multi-Timeframe Filtering → Advanced Stats → Additional Indicators.
+- Monte Carlo and Walk-Forward should ship together — they are complementary overfitting signals and users will expect both once they see one.

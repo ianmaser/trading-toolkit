@@ -66,6 +66,52 @@ Create a POST endpoint at /backtest that accepts: symbol, timeframe, date_from, 
 
 Add a GET /health endpoint. Add CORS for localhost and the Vercel domain. Add a railway.toml to python-service/ so it deploys on Railway (start command: uvicorn main:app --host 0.0.0.0 --port $PORT). All Next.js API routes that proxy to this service must read the base URL from process.env.PYTHON_SERVICE_URL — never hardcode it."
 
+Prompt 10b — Backtest engine hardening:
+
+"Harden the Python backtest service to produce realistic, trustworthy results. All changes are inside python-service/main.py and types/backtest.ts.
+
+(1) Entry timing — add an entry_timing field to StrategyConfig (enum: 'close' | 'next_open', default 'next_open'). When 'next_open', enter at the open of the bar after the signal fires instead of the signal bar's close. This eliminates look-ahead bias. Update BacktestRequest and the Zod schema in app/api/backtest/route.ts and components/features/StrategyBuilder.tsx to expose this as a toggle labeled 'Entry: Signal Close / Next Bar Open'.
+
+(2) Slippage and commission — add slippage_pct (float, default 0.0) and commission_per_trade (float, default 0.0) to StrategyConfig. Slippage adjusts entry and exit prices (buy higher, sell lower). Commission reduces R on every trade. Expose both as number inputs in the StrategyBuilder settings panel and in the Backtest Lab parameters card.
+
+(3) Trailing stop — add exit_type to StrategyConfig (enum: 'fixed' | 'trailing_atr' | 'trailing_pct', default 'fixed'). For 'trailing_atr': after entry, the stop moves up (long) or down (short) to trail price by N * ATR — add trail_atr_multiplier (float, default 2.0). For 'trailing_pct': trail by a fixed percentage of price — add trail_pct (float, default 2.0). Fixed stop stays at entry - ATR * stop_loss_r as before. Update the simulation loop to track and move the trailing stop each bar. Add exit_type and trail settings to StrategyBuilder.
+
+(4) Enhanced statistics — add to every backtest result: avg_win_r (avg R of winning trades), avg_loss_r (avg R of losing trades — negative number), largest_win_r, largest_loss_r, max_consecutive_wins (longest streak), max_consecutive_losses (longest losing streak), sharpe_ratio (annualized — total R / std dev of trade R multiples * sqrt(trades_per_year)), expectancy_per_bar (expectancy / avg_bars_per_trade). Update BacktestResult in types/backtest.ts and display all new stats in the Backtest Lab results — add a second stats row below the existing one and a 'Streak Risk' section showing consecutive losses prominently.
+
+(5) New indicators — add to python-service/main.py:
+- VWAP: volume-weighted average price (requires intraday data; for daily data return the daily close as a proxy with a note). Formula: cumulative(typical_price * volume) / cumulative(volume). Reset daily for intraday timeframes.
+- STOCH: Stochastic oscillator %K and %D (14-period %K, 3-period SMA smoothing). Return stoch_k and stoch_d.
+- SUPERTREND: ATR-based trend indicator. Parameters: period 10, multiplier 3. Returns supertrend_value (the line) and supertrend_direction (1 = bullish / -1 = bearish). Use pandas-ta's supertrend function.
+- BB_PCT: Bollinger Band %B — already computed via bbands() but not returned. Add bb_pct to the calculate_indicators output alongside BB_WIDTH.
+
+Add all new indicators to the INDICATORS list in StrategyBuilder.tsx and to the get_indicator_series function so they can be used in backtest conditions."
+
+Prompt 10c — Price action & market structure engine (✅ Done — 2026-05-05):
+
+"Extend the backtest engine beyond mathematical indicators to support the price action and market structure concepts real traders use.
+
+All new patterns are implemented as binary (0/1) pandas Series in _get_series() in python-service/main.py. They plug into the existing Condition model using operator '==' value 1 — no changes needed to Condition, Zod schemas, or API routes.
+
+New helper functions added before _get_series():
+- _swing_highs_series(df, n=3) — confirmed local swing highs with n-bar lag (no lookahead)
+- _swing_lows_series(df, n=3) — confirmed local swing lows
+- _consecutive_swing_comparison(df, swing_series, price_col, direction) — HH/HL/LH/LL detection
+- _trendline_series(df, mode, tolerance_pct, max_age) — projects a trendline through 2 most recent confirmed swing points; modes: resistance, support, breakout_up, breakout_down
+- _horizontal_sr_series(df, mode, lookback, tolerance_pct) — detects price levels with 2+ historical bounces
+- _round_number_series(df, mode) — detects proximity to psychological round numbers
+
+New indicators added to _get_series():
+Candlestick patterns: HAMMER, BULLISH_PIN_BAR, SHOOTING_STAR, BEARISH_PIN_BAR, DOJI, BULLISH_ENGULFING, BEARISH_ENGULFING, INSIDE_BAR, OUTSIDE_BAR, MORNING_STAR, EVENING_STAR, THREE_WHITE_SOLDIERS, THREE_BLACK_CROWS
+Market structure: SWING_HIGH, SWING_LOW, BOS_BULLISH, BOS_BEARISH, HIGHER_HIGH, HIGHER_LOW, LOWER_HIGH, LOWER_LOW, UPTREND_STRUCTURE, DOWNTREND_STRUCTURE
+S/R: NEAR_HORIZONTAL_SUPPORT, NEAR_HORIZONTAL_RESISTANCE, NEAR_RESISTANCE_TRENDLINE, NEAR_SUPPORT_TRENDLINE, TRENDLINE_BREAKOUT_UP, TRENDLINE_BREAKOUT_DOWN
+Round numbers: NEAR_ROUND_NUMBER, AT_ROUND_FIVE
+
+Warmup increased from 50 to 100 bars to accommodate swing/trendline detection.
+
+Frontend: INDICATORS flat array replaced with INDICATOR_GROUPS (9 groups with SelectGroup/SelectLabel), PATTERN_INDICATORS Set, isPattern() helper. Pattern indicators auto-set operator=='==' value=1 and show a 'pattern detected' badge instead of operator/value inputs. serializeToPrompt() updated to render pattern conditions as '[INDICATOR] pattern is detected'.
+
+Strategy parser system prompt updated to enumerate all new indicators with descriptions and the binary pattern convention."
+
 Prompt 11 — Strategy parser:
 
 "Create services/strategyParser.ts in the Next.js app. It calls the Claude API with the user's plain-English strategy prompt and returns a structured StrategyConfig JSON object matching the Python service's expected input format. The Claude prompt should extract: conditions (indicator name, comparison operator, value or crossover), take_profit_r, stop_loss_r, entry_type (breakout/pullback/crossover). Also create a StrategyBuilder React component at components/features/StrategyBuilder.tsx — a visual form with dropdowns for indicator, operator, value that produces the same StrategyConfig and syncs bidirectionally with the prompt input. Both inputs should update each other."
