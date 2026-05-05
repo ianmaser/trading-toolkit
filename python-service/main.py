@@ -6,7 +6,6 @@ from typing import Optional
 import httpx
 import numpy as np
 import pandas as pd
-import pandas_ta as ta
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -120,6 +119,129 @@ def _max_consecutive(outcomes: list[str], target: str) -> int:
         else:
             current = 0
     return max_streak
+
+
+# ---------------------------------------------------------------------------
+# Native indicator implementations (no external library required)
+# ---------------------------------------------------------------------------
+
+def _calc_rsi(close: pd.Series, length: int = 14) -> pd.Series:
+    delta = close.diff()
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
+    avg_gain = gain.ewm(alpha=1 / length, adjust=False).mean()
+    avg_loss = loss.ewm(alpha=1 / length, adjust=False).mean()
+    rs = avg_gain / avg_loss.replace(0, np.nan)
+    return 100 - (100 / (1 + rs))
+
+
+def _calc_ema(close: pd.Series, length: int) -> pd.Series:
+    return close.ewm(span=length, adjust=False).mean()
+
+
+def _calc_macd(close: pd.Series) -> tuple[pd.Series, pd.Series, pd.Series]:
+    ema12 = _calc_ema(close, 12)
+    ema26 = _calc_ema(close, 26)
+    macd = ema12 - ema26
+    signal = macd.ewm(span=9, adjust=False).mean()
+    hist = macd - signal
+    return macd, signal, hist
+
+
+def _calc_bbands(close: pd.Series, length: int = 20, std_dev: float = 2.0) -> tuple[pd.Series, pd.Series]:
+    sma = close.rolling(length).mean()
+    s = close.rolling(length).std(ddof=0)
+    upper = sma + std_dev * s
+    lower = sma - std_dev * s
+    denom = (upper - lower).replace(0, np.nan)
+    bb_width = denom / sma.replace(0, np.nan)
+    bb_pct = (close - lower) / denom
+    return bb_width, bb_pct
+
+
+def _calc_atr(high: pd.Series, low: pd.Series, close: pd.Series, length: int = 14) -> pd.Series:
+    tr = pd.concat([
+        high - low,
+        (high - close.shift(1)).abs(),
+        (low - close.shift(1)).abs(),
+    ], axis=1).max(axis=1)
+    return tr.ewm(alpha=1 / length, adjust=False).mean()
+
+
+def _calc_adx(high: pd.Series, low: pd.Series, close: pd.Series, length: int = 14) -> pd.Series:
+    tr = pd.concat([
+        high - low,
+        (high - close.shift(1)).abs(),
+        (low - close.shift(1)).abs(),
+    ], axis=1).max(axis=1)
+    plus_dm = high.diff().clip(lower=0)
+    minus_dm = (-low.diff()).clip(lower=0)
+    # only keep the dominant directional move
+    mask = plus_dm >= minus_dm
+    plus_dm = plus_dm.where(mask, 0.0)
+    minus_dm = minus_dm.where(~mask, 0.0)
+    atr = tr.ewm(alpha=1 / length, adjust=False).mean().replace(0, np.nan)
+    plus_di = 100 * plus_dm.ewm(alpha=1 / length, adjust=False).mean() / atr
+    minus_di = 100 * minus_dm.ewm(alpha=1 / length, adjust=False).mean() / atr
+    dx = 100 * (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0, np.nan)
+    return dx.ewm(alpha=1 / length, adjust=False).mean()
+
+
+def _calc_stoch(
+    high: pd.Series, low: pd.Series, close: pd.Series,
+    k_period: int = 14, d_period: int = 3,
+) -> tuple[pd.Series, pd.Series]:
+    low_min = low.rolling(k_period).min()
+    high_max = high.rolling(k_period).max()
+    stoch_k = 100 * (close - low_min) / (high_max - low_min).replace(0, np.nan)
+    stoch_d = stoch_k.rolling(d_period).mean()
+    return stoch_k, stoch_d
+
+
+def _calc_supertrend(
+    high: pd.Series, low: pd.Series, close: pd.Series,
+    length: int = 10, multiplier: float = 3.0,
+) -> tuple[pd.Series, pd.Series]:
+    """Returns (supertrend_value, direction) where direction: 1=bullish, -1=bearish."""
+    hl2 = (high + low) / 2
+    atr = _calc_atr(high, low, close, length)
+    basic_upper = hl2 + multiplier * atr
+    basic_lower = hl2 - multiplier * atr
+
+    n = len(close)
+    close_vals = close.values
+    final_upper = basic_upper.values.copy()
+    final_lower = basic_lower.values.copy()
+    direction = np.ones(n)  # start bullish
+    supertrend = np.zeros(n)
+
+    for i in range(1, n):
+        # upper band only tightens
+        final_upper[i] = (
+            min(basic_upper.iloc[i], final_upper[i - 1])
+            if close_vals[i - 1] <= final_upper[i - 1]
+            else basic_upper.iloc[i]
+        )
+        # lower band only rises
+        final_lower[i] = (
+            max(basic_lower.iloc[i], final_lower[i - 1])
+            if close_vals[i - 1] >= final_lower[i - 1]
+            else basic_lower.iloc[i]
+        )
+        # direction
+        if direction[i - 1] == -1 and close_vals[i] > final_upper[i - 1]:
+            direction[i] = 1
+        elif direction[i - 1] == 1 and close_vals[i] < final_lower[i - 1]:
+            direction[i] = -1
+        else:
+            direction[i] = direction[i - 1]
+
+        supertrend[i] = final_lower[i] if direction[i] == 1 else final_upper[i]
+
+    return (
+        pd.Series(supertrend, index=close.index),
+        pd.Series(direction, index=close.index),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -324,63 +446,61 @@ def _get_series(df: pd.DataFrame, indicator: str) -> Optional[pd.Series]:
 
     try:
         if ind == "RSI":
-            return ta.rsi(df["close"], length=14)
+            return _calc_rsi(df["close"], length=14)
 
         if ind == "MACD":
-            res = ta.macd(df["close"])
-            return res.iloc[:, 0] if res is not None and not res.empty else None
+            macd, _, _ = _calc_macd(df["close"])
+            return macd
 
         if ind == "MACD_SIGNAL":
-            res = ta.macd(df["close"])
-            return res.iloc[:, 2] if res is not None and not res.empty else None
+            _, signal, _ = _calc_macd(df["close"])
+            return signal
 
         if ind == "MACD_HIST":
-            res = ta.macd(df["close"])
-            return res.iloc[:, 1] if res is not None and not res.empty else None
+            _, _, hist = _calc_macd(df["close"])
+            return hist
 
         if ind.startswith("EMA_"):
             length = int(ind.split("_")[1])
-            return ta.ema(df["close"], length=length)
+            return _calc_ema(df["close"], length)
 
         if ind in ("BB_WIDTH", "BB"):
-            res = ta.bbands(df["close"])
-            return res.iloc[:, 3] if res is not None and not res.empty else None
+            bb_width, _ = _calc_bbands(df["close"])
+            return bb_width
 
         if ind == "BB_PCT":
-            res = ta.bbands(df["close"])
-            return res.iloc[:, 4] if res is not None and not res.empty else None
+            _, bb_pct = _calc_bbands(df["close"])
+            return bb_pct
 
         if ind == "ATR":
-            return ta.atr(df["high"], df["low"], df["close"], length=14)
+            return _calc_atr(df["high"], df["low"], df["close"], length=14)
 
         if ind == "VOLUME_RATIO":
             vol_ma = df["volume"].rolling(20).mean()
             return df["volume"] / vol_ma
 
         if ind == "ADX":
-            res = ta.adx(df["high"], df["low"], df["close"])
-            return res.iloc[:, 0] if res is not None and not res.empty else None
+            return _calc_adx(df["high"], df["low"], df["close"])
 
         if ind == "VWAP":
             typical = (df["high"] + df["low"] + df["close"]) / 3
             return (typical * df["volume"]).cumsum() / df["volume"].cumsum()
 
         if ind in ("STOCH", "STOCH_K"):
-            res = ta.stoch(df["high"], df["low"], df["close"])
-            return res.iloc[:, 0] if res is not None and not res.empty else None
+            stoch_k, _ = _calc_stoch(df["high"], df["low"], df["close"])
+            return stoch_k
 
         if ind == "STOCH_D":
-            res = ta.stoch(df["high"], df["low"], df["close"])
-            return res.iloc[:, 1] if res is not None and not res.empty else None
+            _, stoch_d = _calc_stoch(df["high"], df["low"], df["close"])
+            return stoch_d
 
         if ind == "SUPERTREND":
-            # Returns direction: 1 = bullish, -1 = bearish
-            res = ta.supertrend(df["high"], df["low"], df["close"], length=10, multiplier=3.0)
-            return res.iloc[:, 1] if res is not None and not res.empty else None
+            _, direction = _calc_supertrend(df["high"], df["low"], df["close"])
+            return direction
 
         if ind == "SUPERTREND_VALUE":
-            res = ta.supertrend(df["high"], df["low"], df["close"], length=10, multiplier=3.0)
-            return res.iloc[:, 0] if res is not None and not res.empty else None
+            value, _ = _calc_supertrend(df["high"], df["low"], df["close"])
+            return value
 
         if ind == "CLOSE":
             return df["close"]
@@ -501,7 +621,8 @@ def _get_series(df: pd.DataFrame, indicator: str) -> Optional[pd.Series]:
                     continue
                 last_sh = sh_locs[-1]
                 level = float(high_vals[df.index.get_loc(last_sh)])
-                if close_vals[i] > level:
+                # Fire only on the crossover bar: prev close was below, current close is above
+                if close_vals[i - 1] <= level and close_vals[i] > level:
                     res[i] = 1.0
             return pd.Series(res, index=df.index)
 
@@ -518,7 +639,8 @@ def _get_series(df: pd.DataFrame, indicator: str) -> Optional[pd.Series]:
                     continue
                 last_sl = sl_locs[-1]
                 level = float(low_vals[df.index.get_loc(last_sl)])
-                if close_vals[i] < level:
+                # Fire only on the crossover bar: prev close was above, current close is below
+                if close_vals[i - 1] >= level and close_vals[i] < level:
                     res[i] = 1.0
             return pd.Series(res, index=df.index)
 
@@ -631,39 +753,28 @@ def calculate_indicators(df: pd.DataFrame, indicators: list[str]) -> dict:
         ind_upper = ind.upper()
         try:
             if ind_upper == "MACD":
-                res = ta.macd(df["close"])
-                if res is not None and not res.empty:
-                    result["macd"] = _last(res.iloc[:, 0])
-                    result["macd_hist"] = _last(res.iloc[:, 1])
-                    result["macd_signal"] = _last(res.iloc[:, 2])
+                macd, signal, hist = _calc_macd(df["close"])
+                result["macd"] = _last(macd)
+                result["macd_hist"] = _last(hist)
+                result["macd_signal"] = _last(signal)
 
-            elif ind_upper in ("BB_WIDTH", "BB"):
-                res = ta.bbands(df["close"])
-                if res is not None and not res.empty:
-                    result["bb_lower"] = _last(res.iloc[:, 0])
-                    result["bb_mid"] = _last(res.iloc[:, 1])
-                    result["bb_upper"] = _last(res.iloc[:, 2])
-                    result["bb_width"] = _last(res.iloc[:, 3])
-                    result["bb_pct"] = _last(res.iloc[:, 4])
+            elif ind_upper in ("BB_WIDTH", "BB", "BB_PCT"):
+                bb_width, bb_pct = _calc_bbands(df["close"])
+                result["bb_width"] = _last(bb_width)
+                result["bb_pct"] = _last(bb_pct)
 
             elif ind_upper == "ADX":
-                res = ta.adx(df["high"], df["low"], df["close"])
-                if res is not None and not res.empty:
-                    result["adx"] = _last(res.iloc[:, 0])
-                    result["adx_pos"] = _last(res.iloc[:, 1])
-                    result["adx_neg"] = _last(res.iloc[:, 2])
+                result["adx"] = _last(_calc_adx(df["high"], df["low"], df["close"]))
 
             elif ind_upper in ("STOCH", "STOCH_K"):
-                res = ta.stoch(df["high"], df["low"], df["close"])
-                if res is not None and not res.empty:
-                    result["stoch_k"] = _last(res.iloc[:, 0])
-                    result["stoch_d"] = _last(res.iloc[:, 1])
+                stoch_k, stoch_d = _calc_stoch(df["high"], df["low"], df["close"])
+                result["stoch_k"] = _last(stoch_k)
+                result["stoch_d"] = _last(stoch_d)
 
             elif ind_upper == "SUPERTREND":
-                res = ta.supertrend(df["high"], df["low"], df["close"], length=10, multiplier=3.0)
-                if res is not None and not res.empty:
-                    result["supertrend_value"] = _last(res.iloc[:, 0])
-                    result["supertrend_direction"] = _last(res.iloc[:, 1])
+                st_value, st_dir = _calc_supertrend(df["high"], df["low"], df["close"])
+                result["supertrend_value"] = _last(st_value)
+                result["supertrend_direction"] = _last(st_dir)
 
             else:
                 series = _get_series(df, ind_upper)
@@ -884,19 +995,16 @@ def run_backtest(df: pd.DataFrame, config: StrategyConfig, timeframe: str = "1D"
 
     # Pre-compute regime series
     try:
-        adx_res = ta.adx(df["high"], df["low"], df["close"])
-        adx_series: Optional[pd.Series] = (
-            adx_res.iloc[:, 0].reset_index(drop=True) if adx_res is not None else None
-        )
+        adx_series: Optional[pd.Series] = _calc_adx(
+            df["high"], df["low"], df["close"]
+        ).reset_index(drop=True)
     except Exception:
         adx_series = None
 
     try:
-        atr_full = ta.atr(df["high"], df["low"], df["close"], length=14)
+        atr_full = _calc_atr(df["high"], df["low"], df["close"], length=14)
         atr_pct_series: Optional[pd.Series] = (
             (atr_full / df["close"] * 100).reset_index(drop=True)
-            if atr_full is not None
-            else None
         )
     except Exception:
         atr_pct_series = None
