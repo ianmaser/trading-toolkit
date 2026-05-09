@@ -1,5 +1,10 @@
 'use client'
 
+// TickerPageClient — the interactive content of the /dashboard/ticker/[symbol] page.
+// This is a Client Component ('use client') because it holds local state (active timeframe,
+// chart ref) and uses TanStack Query hooks for data fetching. The parent server component
+// passes the `symbol` param down as a prop so this component never needs to touch the URL.
+
 import { useRef, useState, useCallback } from 'react'
 import { ArrowUp, ArrowDown, Minus, BarChart2, Calculator, Layers } from 'lucide-react'
 import { useQuote } from '@/hooks/useMarketData'
@@ -9,23 +14,33 @@ import { useAppStore } from '@/lib/store'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
+// CandlestickChartHandle is the ref type exposed by CandlestickChart via useImperativeHandle —
+// it lets this parent component call chart methods imperatively (e.g. scrollToBar).
 import CandlestickChart, { type CandlestickChartHandle } from '@/components/features/CandlestickChart'
+// computeTrend is exported from MiniChart so this file can compute directional bias
+// for each timeframe without re-implementing the logic.
 import MiniChart, { computeTrend } from '@/components/features/MiniChart'
 import { CatalystStrip } from '@/components/features/CatalystStrip'
 import type { Timeframe } from '@/types/market'
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
+// Returns today's date as a YYYY-MM-DD string — the format expected by Polygon.io date params.
 function today(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
+// Returns the date n calendar days ago as a YYYY-MM-DD string.
+// Used to compute the lookback window for each timeframe.
 function daysAgoStr(n: number): string {
   const d = new Date()
   d.setDate(d.getDate() - n)
   return d.toISOString().slice(0, 10)
 }
 
+// Maps a selected timeframe to the appropriate lookback range for the main chart.
+// Shorter timeframes (5M, 15M) need less history to avoid massive data payloads;
+// daily bars benefit from a full 6-month view to show trend context.
 function mainChartRange(tf: Timeframe): { from: string; to: string } {
   const to = today()
   switch (tf) {
@@ -39,8 +54,15 @@ function mainChartRange(tf: Timeframe): { from: string; to: string } {
 
 // ─── Confluence helpers ───────────────────────────────────────────────────────
 
+// A Trend is the directional bias computed from a candle series by computeTrend().
+// 'up' means closing slope is positive, 'down' means negative, 'neutral' means flat.
 type Trend = 'up' | 'down' | 'neutral'
 
+// Combines the trend signals from three timeframes (1D, 4H, 1H) into a single 0-100 score.
+// Each 'up' contributes +1, each 'down' -1, neutral contributes 0.
+// The raw sum ranges from -3 (all bearish) to +3 (all bullish).
+// The formula `(raw + 3) / 6` shifts and normalizes that to a 0.0-1.0 range,
+// then multiplying by 100 gives a 0-100 integer.
 function confluenceScore(trends: Trend[]): number {
   const raw = trends.reduce((acc, t) => {
     if (t === 'up') return acc + 1
@@ -51,6 +73,7 @@ function confluenceScore(trends: Trend[]): number {
   return Math.round(((raw + 3) / 6) * 100)
 }
 
+// Maps a 0-100 confluence score to a human-readable directional label.
 function confluenceLabel(score: number): string {
   if (score >= 75) return 'Bullish'
   if (score >= 55) return 'Leaning Bullish'
@@ -59,6 +82,7 @@ function confluenceLabel(score: number): string {
   return 'Bearish'
 }
 
+// Maps a confluence score to a Tailwind CSS text color class for display.
 function confluenceColor(score: number): string {
   if (score >= 75) return 'text-green-500'
   if (score >= 55) return 'text-green-400'
@@ -175,37 +199,58 @@ function PatternSidebarPlaceholder() {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 interface TickerPageClientProps {
+  // The ticker symbol (e.g. 'AAPL') passed down from the parent server component.
+  // It originates from the [symbol] dynamic route segment in the URL.
   symbol: string
 }
 
 export default function TickerPageClient({ symbol }: TickerPageClientProps) {
+  // useRef creates a mutable reference that persists across renders without triggering re-renders.
+  // Here it holds the CandlestickChart's imperative handle (methods exposed via useImperativeHandle)
+  // so this parent can call chart methods (e.g. scrollToBar) without the chart re-rendering.
   const chartRef = useRef<CandlestickChartHandle>(null)
   const [activeTimeframe, setActiveTimeframe] = useState<Timeframe>('1D')
   const { setActiveTicker } = useAppStore()
 
-  // Set active ticker in global store for BULL-E context
+  // One-time side effect: update the global Zustand store with the current symbol.
+  // This is intentionally done with `useState` (not `useEffect`) because we only want it
+  // to run once on mount, not on every render. `useState` with a callback runs the callback
+  // exactly once — the return value is ignored (we just want the side effect of setActiveTicker).
+  // BULL-E reads `activeTicker` from the store to know which symbol the user is viewing.
   useState(() => { setActiveTicker(symbol) })
 
   // ── Data fetching ──────────────────────────────────────────────────────────
+  // TanStack Query hooks — each returns `{ data, isLoading }`. The hooks cache by queryKey
+  // so switching tabs doesn't re-fetch. See hooks/useMarketData.ts for staleTime details.
   const { data: quote, isLoading: quoteLoading } = useQuote(symbol)
   const { data: details, isLoading: detailsLoading } = useTickerDetails(symbol)
 
+  // Recompute the date range whenever the active timeframe changes.
+  // mainCandles drives the large primary chart.
   const mainRange = mainChartRange(activeTimeframe)
   const { data: mainCandles = [], isLoading: mainLoading } = useCandles(
     symbol, activeTimeframe, mainRange.from, mainRange.to
   )
 
-  // Confluence mini charts — fixed ranges, always load in background
+  // Confluence mini charts — always load in the background using fixed lookback windows.
+  // These three series feed the multi-timeframe confluence panel on the right.
+  // They are independent of the main chart's active timeframe.
   const todayStr = today()
   const { data: daily1D = [], isLoading: daily1DLoading } = useCandles(symbol, '1D', daysAgoStr(60), todayStr)
   const { data: daily4H = [], isLoading: daily4HLoading } = useCandles(symbol, '4H', daysAgoStr(30), todayStr)
   const { data: daily1H = [], isLoading: daily1HLoading } = useCandles(symbol, '1H', daysAgoStr(7), todayStr)
 
+  // Compute the directional trend for each timeframe from the candle data.
+  // computeTrend() returns 'up' | 'down' | 'neutral' based on closing price slope.
   const trend1D = computeTrend(daily1D)
   const trend4H = computeTrend(daily4H)
   const trend1H = computeTrend(daily1H)
+  // Combine the three trend signals into a single 0-100 score for the confluence badge.
   const score = confluenceScore([trend1D, trend4H, trend1H])
 
+  // useCallback memoizes this function so it has a stable reference across renders.
+  // Without this, passing handleTimeframeChange as a prop to CandlestickChart would create
+  // a new function object on every render, causing the chart to unnecessarily re-render.
   const handleTimeframeChange = useCallback((tf: Timeframe) => {
     setActiveTimeframe(tf)
   }, [])

@@ -27,10 +27,10 @@ and the companion .md are complete.
 
 ### components/features/ (4 files)
 Complex logic only — streaming AI, charting library internals, strategy serialization.
-- [ ] `BullEChat.tsx` + `BullEChat.md`
-- [ ] `CandlestickChart.tsx` + `CandlestickChart.md`
-- [ ] `MiniChart.tsx` + `MiniChart.md`
-- [ ] `StrategyBuilder.tsx` + `StrategyBuilder.md`
+- [x] `BullEChat.tsx` + `BullEChat.md`
+- [x] `CandlestickChart.tsx` + `CandlestickChart.md`
+- [x] `MiniChart.tsx` + `MiniChart.md`
+- [x] `StrategyBuilder.tsx` + `StrategyBuilder.md`
 
 ### hooks/ (4 files)
 TanStack Query patterns, Supabase mutations, backtest orchestration.
@@ -47,21 +47,21 @@ Provider fallback logic, Claude AI parsing.
 
 ### app/api/ routes (8 files)
 Rate limiting, RLS, data pipeline assembly.
-- [ ] `app/api/market/candles/route.ts` + `candles.md`
-- [ ] `app/api/market/quote/route.ts` + `quote.md`
-- [ ] `app/api/market/search/route.ts` + `search.md`
-- [ ] `app/api/market/details/route.ts` + `details.md`
-- [ ] `app/api/institutional/[symbol]/route.ts` + `institutional.md`
-- [ ] `app/api/backtest/route.ts` + `backtest-route.md`
-- [ ] `app/api/backtest/analyze/route.ts` + `analyze.md`
-- [ ] `app/api/strategy/parse/route.ts` + `parse.md`
+- [x] `app/api/market/candles/route.ts` + `candles.md`
+- [x] `app/api/market/quote/route.ts` + `quote.md`
+- [x] `app/api/market/search/route.ts` + `search.md`
+- [x] `app/api/market/details/route.ts` + `details.md`
+- [x] `app/api/institutional/[symbol]/route.ts` + `institutional.md`
+- [x] `app/api/backtest/route.ts` + `backtest-route.md`
+- [x] `app/api/backtest/analyze/route.ts` + `analyze.md`
+- [x] `app/api/strategy/parse/route.ts` + `parse.md`
 
 ### app/ pages (4 files)
 Non-obvious wiring: Query client bootstrap, auth callback flow, multi-source orchestration.
-- [ ] `app/providers.tsx` + `providers.md`
-- [ ] `app/auth/callback/route.ts` + `auth-callback.md`
-- [ ] `app/dashboard/ticker/[symbol]/TickerPageClient.tsx` + `TickerPageClient.md`
-- [ ] `app/dashboard/backtest/page.tsx` + `backtest-page.md`
+- [x] `app/providers.tsx` + `providers.md`
+- [x] `app/auth/callback/route.ts` + `auth-callback.md`
+- [x] `app/dashboard/ticker/[symbol]/TickerPageClient.tsx` + `TickerPageClient.md`
+- [x] `app/dashboard/backtest/page.tsx` + `backtest-page.md`
 
 ### lib/ (3 files)
 Zustand store, rate limiter, SSR Supabase client with cookie handling.
@@ -74,7 +74,7 @@ Self-explanatory for a TypeScript-familiar developer.
 
 ### python-service/ (1 file)
 All indicator math, backtest engine, pattern detection, swing/trendline/S&R logic.
-- [ ] `python-service/main.py` + `main.md`
+- [x] `python-service/main.py` + `main.md`
 
 ---
 

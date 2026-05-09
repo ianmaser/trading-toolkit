@@ -1,5 +1,11 @@
 'use client'
 
+// StrategyBuilder — a dual-mode (text + visual) strategy definition UI.
+// The user can type a strategy in plain English OR use dropdown menus to build it visually.
+// Both modes stay in sync: typing auto-parses via Claude AI and populates the visual form;
+// changing the visual form auto-serializes the conditions back into the text prompt.
+// The bidirectional sync is managed by `skipSync.current` to prevent infinite update loops.
+
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -75,6 +81,10 @@ const INDICATOR_GROUPS: IndicatorGroup[] = [
 
 const ALL_INDICATORS = INDICATOR_GROUPS.flatMap((g) => g.indicators)
 
+// PATTERN_INDICATORS is a Set (not an Array) for O(1) membership lookup.
+// These indicators return a binary 0/1 value from the Python service — 1 means the
+// pattern was detected on the current bar. They cannot be compared with numeric operators
+// like `> 30`, so selecting one auto-sets operator to `==` and value to `1` (see onValueChange below).
 const PATTERN_INDICATORS = new Set<string>([
   'HAMMER', 'SHOOTING_STAR', 'DOJI',
   'BULLISH_ENGULFING', 'BEARISH_ENGULFING',
@@ -93,6 +103,8 @@ const PATTERN_INDICATORS = new Set<string>([
   'NEAR_ROUND_NUMBER', 'AT_ROUND_FIVE',
 ])
 
+// Helper used in the render to decide whether to show the operator/value selectors
+// or just a "pattern detected" badge for the selected indicator.
 function isPattern(indicator: string): boolean {
   return PATTERN_INDICATORS.has(indicator)
 }
@@ -118,6 +130,11 @@ function isCross(op: string): op is 'crossover' | 'crossunder' {
 // Serializer: visual state → plain-English string
 // ---------------------------------------------------------------------------
 
+// `serializeToPrompt` converts the current visual StrategyConfig back into a human-readable
+// prompt string. This is called every time a visual control changes, keeping the text prompt
+// in sync with the visual builder.
+// It's also used to initialize the prompt on first render from a pre-existing config
+// (e.g. when the user reloads a saved playbook).
 function serializeToPrompt(config: StrategyConfig): string {
   if (!config.conditions.length) return ''
   const dir = config.direction === 'long' ? 'Buy' : 'Sell short'
@@ -167,23 +184,41 @@ interface Props {
 // ---------------------------------------------------------------------------
 
 export function StrategyBuilder({ value, onChange, prompt: externalPrompt, onPromptChange }: Props) {
+  // `internalPrompt` holds the prompt text when the parent doesn't control it.
+  // Initialized from `serializeToPrompt(value)` so the text matches the initial config.
   const [internalPrompt, setInternalPrompt] = useState(() => serializeToPrompt(value))
+  // If the parent passes `prompt`, use that (controlled); otherwise use internal state.
+  // This is the "uncontrolled with optional controlled override" pattern.
   const prompt = externalPrompt ?? internalPrompt
   const setPrompt = useCallback(
     (text: string) => {
       setInternalPrompt(text)
-      onPromptChange?.(text)
+      onPromptChange?.(text)  // Notify parent if it cares about prompt changes.
     },
     [onPromptChange]
   )
 
   const [isParsing, setIsParsing] = useState(false)
   const [parseError, setParseError] = useState<string | undefined>(undefined)
+  // debounceRef holds the pending setTimeout ID for the AI parse trigger.
+  // Storing it in a ref (not state) means clearing it doesn't cause a re-render.
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // Prevent the prompt from re-serializing after a visual change triggers a re-render
+
+  // skipSync is a mutable ref flag that breaks the bidirectional sync loop.
+  //
+  // The sync loop problem:
+  //   User changes a visual dropdown → updateVisual() calls onChange(newConfig) → parent
+  //   updates `value` prop → the useEffect below fires and would call setPrompt(serialize(value))
+  //   → this would overwrite any partial text the user might have typed.
+  //
+  // The fix:
+  //   Before calling onChange() from visual changes, set skipSync.current = true.
+  //   The useEffect reads this flag and skips the re-serialization for that one render cycle.
   const skipSync = useRef(false)
 
-  // Sync prompt when visual state changes externally
+  // Sync prompt when `value` changes externally (e.g. AI parse writes back a new config).
+  // Skipped when the change originated from a visual control (skipSync.current == true)
+  // to prevent the serialized text from overwriting what the user typed.
   useEffect(() => {
     if (skipSync.current) {
       skipSync.current = false
@@ -197,12 +232,17 @@ export function StrategyBuilder({ value, onChange, prompt: externalPrompt, onPro
   // Text prompt → AI parse → visual state
   // ---------------------------------------------------------------------------
 
+  // Called on every keystroke in the text prompt textarea.
+  // Debounces 900ms before sending to Claude — prevents an API call on every keypress.
+  // After 900ms of silence, POSTs to /api/strategy/parse and writes the returned
+  // StrategyConfig back to the visual builder via `onChange`.
   const handlePromptChange = useCallback(
     (text: string) => {
       setPrompt(text)
       setParseError(undefined)
 
       if (debounceRef.current) clearTimeout(debounceRef.current)
+      // Don't trigger a parse for very short inputs — not enough info for Claude.
       if (text.trim().length < 15) return
 
       debounceRef.current = setTimeout(async () => {
@@ -215,6 +255,8 @@ export function StrategyBuilder({ value, onChange, prompt: externalPrompt, onPro
           })
           if (!res.ok) throw new Error('parse failed')
           const config = (await res.json()) as StrategyConfig
+          // Set skipSync before calling onChange so the useEffect above doesn't
+          // immediately re-serialize the new config back over the text the user typed.
           skipSync.current = true
           onChange(config)
         } catch {
@@ -231,6 +273,11 @@ export function StrategyBuilder({ value, onChange, prompt: externalPrompt, onPro
   // Visual builder → update config + re-serialize prompt
   // ---------------------------------------------------------------------------
 
+  // All visual controls call `updateVisual` instead of calling `onChange` directly.
+  // It does three things in sequence:
+  // 1. Sets skipSync.current = true to prevent the useEffect from re-serializing.
+  // 2. Calls onChange(updated) to notify the parent of the new config.
+  // 3. Immediately calls setPrompt(serialize(updated)) to keep the text prompt in sync.
   const updateVisual = useCallback(
     (updated: StrategyConfig) => {
       skipSync.current = true

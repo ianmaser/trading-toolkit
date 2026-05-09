@@ -1,3 +1,6 @@
+// Next.js Route Handler — GET /api/market/details?symbol=AAPL
+// Returns static ticker metadata: company name, exchange, asset type.
+// Data is cached 24 hours in Redis — company names and exchanges don't change intraday.
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getTickerDetails } from '@/services/marketData'
@@ -19,6 +22,8 @@ export async function GET(req: NextRequest) {
     const details = await getTickerDetails(parsed.data.symbol)
     return NextResponse.json(details)
   } catch (err) {
+    // 502 = Polygon failed (no Twelve Data fallback for ticker details).
+    // 500 = unexpected error on our side.
     if (err instanceof MarketDataError) {
       return NextResponse.json({ error: err.message }, { status: 502 })
     }
