@@ -1,5 +1,10 @@
 'use client'
 
+// BacktestPage — the full Backtest Lab UI at /dashboard/backtest.
+// This is a Client Component because the entire experience is interactive:
+// the user configures a strategy, triggers a run, watches results populate,
+// and can save the playbook — all without a page navigation.
+
 import { useCallback, useRef, useState } from 'react'
 import {
   CartesianGrid,
@@ -44,8 +49,15 @@ import { ArrowLeft, BookmarkPlus, Bot, Layers, Loader2 } from 'lucide-react'
 // Types
 // ---------------------------------------------------------------------------
 
+// The page renders one of three exclusive states:
+// 'input'   — strategy builder + parameter form, no results yet
+// 'loading' — spinner while the Python service is running the backtest
+// 'results' — stats, equity curve, trade log, and BULL-E analysis
+// This enum-like union drives the conditional render logic at the bottom of the component.
 type PageState = 'input' | 'loading' | 'results'
 
+// Holds the per-symbol outcome for the "Run on More Tickers" feature.
+// Either `result` (success) or `error` (failure string) is populated — never both.
 interface MultiResult {
   symbol: string
   result?: BacktestResult
@@ -107,6 +119,20 @@ export default function BacktestPage() {
   const [analysis, setAnalysis] = useState('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
 
+  // Fetches BULL-E's analysis of a backtest result using manual streaming.
+  // The `/api/backtest/analyze` route uses Vercel AI SDK's `streamText`, which sends
+  // Claude's output token-by-token. Rather than using a library hook, this function
+  // reads the stream manually with the Web Streams API so it can append each chunk
+  // to the `analysis` state and display the text appearing word-by-word.
+  //
+  // How the manual stream read works:
+  // 1. `response.body` is a ReadableStream — a browser API for consuming chunked HTTP responses.
+  // 2. `.getReader()` creates a lock on the stream and returns a reader.
+  // 3. `reader.read()` yields `{ done, value }` where `value` is a Uint8Array (raw bytes).
+  // 4. `TextDecoder.decode(value, { stream: true })` converts bytes to a string fragment.
+  //    The `{ stream: true }` option is critical — it tells the decoder that more bytes are
+  //    coming so it doesn't try to finalize multi-byte characters mid-stream.
+  // 5. Each decoded fragment is appended to the `analysis` state string.
   const streamAnalysis = useCallback(async (res: BacktestResult) => {
     setIsAnalyzing(true)
     setAnalysis('')
@@ -122,10 +148,13 @@ export default function BacktestPage() {
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
+        // Append each incoming text chunk to the displayed analysis.
+        // The updater function form `(prev) => prev + ...` is used instead of
+        // `setAnalysis(analysis + ...)` to avoid stale closure issues inside the loop.
         setAnalysis((prev) => prev + decoder.decode(value, { stream: true }))
       }
     } catch {
-      // analysis is optional — fail silently
+      // analysis is optional — if Claude fails, the rest of the results still display
     } finally {
       setIsAnalyzing(false)
     }
@@ -148,6 +177,10 @@ export default function BacktestPage() {
     setResult(null)
     setAnalysis('')
     try {
+      // `mutateAsync` is the Promise-based version of TanStack Query's `mutate`.
+      // Unlike `mutate`, it returns the mutation result so we can use it directly
+      // here rather than relying on the `runBacktest.data` property.
+      // It also throws on failure, so the catch block below handles errors.
       const res = await runBacktest.mutateAsync({
         symbol: symbol.toUpperCase(),
         timeframe,
@@ -157,10 +190,14 @@ export default function BacktestPage() {
       })
       setResult(res)
       setPageState('results')
+      // `void streamAnalysis(res)` starts the BULL-E analysis stream as a fire-and-forget call.
+      // `void` suppresses the unhandled Promise lint warning — we intentionally don't await it
+      // because the analysis is secondary to the results. The user sees results immediately
+      // while BULL-E's text streams in asynchronously in the background.
       void streamAnalysis(res)
     } catch (err) {
       setPageState('input')
-      // Error surfaced via runBacktest.error
+      // Error is surfaced via `runBacktest.error` in the JSX below — no need to re-throw.
     }
   }
 
@@ -183,6 +220,8 @@ export default function BacktestPage() {
 
   // ── Run on more tickers ───────────────────────────────────────────────────
   async function handleMultiRun() {
+    // Split on newlines or commas, trim whitespace, uppercase, drop empty strings.
+    // This lets users paste a list like "AAPL, MSFT\nGOOGL" and have it work naturally.
     const symbols = multiSymbols
       .split(/[\n,]+/)
       .map((s) => s.trim().toUpperCase())
@@ -192,6 +231,8 @@ export default function BacktestPage() {
     setIsRunningMulti(true)
     setMultiResults([])
 
+    // Run backtests sequentially (not in parallel) to avoid rate-limiting the Python service.
+    // Each result is appended to `multiResults` as it arrives so the table populates row by row.
     for (const sym of symbols) {
       try {
         const res = await fetch('/api/backtest', {

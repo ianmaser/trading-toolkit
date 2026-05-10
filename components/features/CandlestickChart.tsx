@@ -1,13 +1,25 @@
 'use client'
 
+// CandlestickChart — the main interactive OHLCV chart for the ticker detail page.
+// Built on lightweight-charts (TradingView's open-source canvas charting library).
+// Uses the imperative forwardRef pattern so the parent can call scrollToTime()
+// without going through props or causing unnecessary re-renders.
+
 import {
+  // forwardRef lets a parent component pass a `ref` into this component so it can
+  // call methods on the chart imperatively. Without forwardRef, refs can only point
+  // to DOM elements, not to custom component instances.
   forwardRef,
   useEffect,
+  // useImperativeHandle works together with forwardRef — it defines exactly which
+  // methods the parent can call through the ref, rather than exposing the full DOM node.
   useImperativeHandle,
   useRef,
   useState,
 } from 'react'
 import {
+  // lightweight-charts is a canvas-based charting library. All chart operations are
+  // imperative (createChart, addSeries, setData) rather than declarative React JSX.
   createChart,
   CandlestickSeries,
   HistogramSeries,
@@ -24,6 +36,10 @@ import type { Candle, Timeframe } from '@/types/market'
 
 // ─── Public types ────────────────────────────────────────────────────────────
 
+// ChartAnnotation represents a price-level overlay drawn on the chart.
+// 'line' draws a single horizontal price line (e.g. a key level).
+// 'zone' draws two lines at priceMin and priceMax to indicate a support/resistance zone.
+// Used by the Phase 6 signal engine to highlight entry zones and targets.
 export interface ChartAnnotation {
   type: 'zone' | 'line'
   priceMin: number
@@ -34,6 +50,9 @@ export interface ChartAnnotation {
   label?: string
 }
 
+// CandlestickChartHandle is the shape of the imperative API exposed to parents via the ref.
+// A parent holds a `useRef<CandlestickChartHandle>()` and calls `ref.current.scrollToTime(ts)`
+// to programmatically navigate the chart to a specific bar.
 export interface CandlestickChartHandle {
   scrollToTime: (timestamp: number) => void
 }
@@ -41,8 +60,11 @@ export interface CandlestickChartHandle {
 interface CandlestickChartProps {
   candles: Candle[]
   isLoading?: boolean
+  // Callback fired when the user clicks a timeframe button.
+  // The parent (TickerPageClient) uses this to re-fetch candles for the new timeframe.
   onTimeframeChange?: (timeframe: Timeframe) => void
   defaultTimeframe?: Timeframe
+  // Optional price-level overlays from the signal engine (Phase 6+).
   annotations?: ChartAnnotation[]
   className?: string
 }
@@ -66,6 +88,10 @@ const CHART_COLORS = {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
+// `forwardRef` wraps the component so a parent can pass `ref={chartRef}` and receive
+// the CandlestickChartHandle object back. The two type parameters are:
+// 1. The type of the ref handle (CandlestickChartHandle)
+// 2. The type of the component's props (CandlestickChartProps)
 const CandlestickChart = forwardRef<CandlestickChartHandle, CandlestickChartProps>(
   function CandlestickChart(
     {
@@ -78,13 +104,21 @@ const CandlestickChart = forwardRef<CandlestickChartHandle, CandlestickChartProp
     },
     ref
   ) {
+    // containerRef points to the <div> that lightweight-charts renders its canvas into.
     const containerRef = useRef<HTMLDivElement>(null)
+    // These three refs store the chart and series instances so they can be accessed
+    // across multiple useEffect hooks without being in component state (which would
+    // cause extra re-renders every time they're set).
     const chartRef = useRef<IChartApi | null>(null)
     const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
     const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null)
     const [activeTimeframe, setActiveTimeframe] = useState<Timeframe>(defaultTimeframe)
 
     // ── Create chart on mount ─────────────────────────────────────────────
+    // Empty dependency array `[]` means this runs exactly once when the component mounts.
+    // It initializes the chart, creates the candle and volume series, and wires up cleanup.
+    // Data is NOT set here — that's handled by a separate effect so data changes don't
+    // recreate the entire chart (just call setData on the existing series).
     useEffect(() => {
       if (!containerRef.current) return
 
@@ -98,6 +132,8 @@ const CandlestickChart = forwardRef<CandlestickChartHandle, CandlestickChartProp
           vertLines: { color: CHART_COLORS.grid },
           horzLines: { color: CHART_COLORS.grid },
         },
+        // CrosshairMode.Magnet snaps the crosshair to the nearest candle price
+        // rather than tracking the exact cursor position.
         crosshair: {
           mode: CrosshairMode.Magnet,
         },
@@ -113,6 +149,8 @@ const CandlestickChart = forwardRef<CandlestickChartHandle, CandlestickChartProp
         height: containerRef.current.clientHeight,
       })
 
+      // `addSeries(CandlestickSeries, ...)` creates an OHLC candlestick series.
+      // Up/down colors and wick colors are set here at creation time.
       const candleSeries = chart.addSeries(CandlestickSeries, {
         upColor: CHART_COLORS.upCandle,
         downColor: CHART_COLORS.downCandle,
@@ -122,11 +160,17 @@ const CandlestickChart = forwardRef<CandlestickChartHandle, CandlestickChartProp
         wickDownColor: CHART_COLORS.downCandle,
       })
 
+      // Volume is rendered as a separate Histogram series overlaid on the price chart.
+      // `priceScaleId: 'volume'` assigns it to a named secondary price scale so it
+      // doesn't share the y-axis with the candle prices.
       const volumeSeries = chart.addSeries(HistogramSeries, {
         priceFormat: { type: 'volume' },
         priceScaleId: 'volume',
       })
 
+      // `scaleMargins` controls how much of the chart height the volume series occupies.
+      // `top: 0.8` means the volume bars start at 80% down the chart, leaving the top
+      // 80% for price candles and squeezing volume into the bottom 20%.
       chart.priceScale('volume').applyOptions({
         scaleMargins: { top: 0.8, bottom: 0 },
       })
@@ -144,9 +188,14 @@ const CandlestickChart = forwardRef<CandlestickChartHandle, CandlestickChartProp
     }, [])
 
     // ── Sync candle + volume data ─────────────────────────────────────────
+    // Runs whenever the `candles` prop changes (new timeframe, new symbol, data loaded).
+    // Calls `setData` on the existing series instances rather than recreating the chart —
+    // this preserves zoom level and scroll position between data updates.
     useEffect(() => {
       if (!candleSeriesRef.current || !volumeSeriesRef.current || candles.length === 0) return
 
+      // `setData` replaces all existing data on the series in one call.
+      // lightweight-charts requires data to be sorted by time ascending.
       candleSeriesRef.current.setData(
         candles.map(c => ({
           time: c.timestamp as Time,
@@ -157,6 +206,8 @@ const CandlestickChart = forwardRef<CandlestickChartHandle, CandlestickChartProp
         }))
       )
 
+      // Volume bars are colored green for up-closes, red for down-closes.
+      // This is set per-bar in the `color` field of each data point.
       volumeSeriesRef.current.setData(
         candles.map(c => ({
           time: c.timestamp as Time,
@@ -167,6 +218,9 @@ const CandlestickChart = forwardRef<CandlestickChartHandle, CandlestickChartProp
     }, [candles])
 
     // ── Sync annotations ─────────────────────────────────────────────────
+    // Runs whenever the `annotations` prop changes — removes all existing price lines
+    // and redraws from the updated list. Price lines are lightweight-charts' mechanism
+    // for horizontal lines drawn at specific price levels (used for support/resistance zones).
     useEffect(() => {
       if (!candleSeriesRef.current) return
 
@@ -177,6 +231,7 @@ const CandlestickChart = forwardRef<CandlestickChartHandle, CandlestickChartProp
 
       for (const ann of annotations) {
         if (ann.type === 'line') {
+          // A single dashed horizontal line at `priceMin`.
           candleSeriesRef.current.createPriceLine({
             price: ann.priceMin,
             color: ann.color,
@@ -186,7 +241,8 @@ const CandlestickChart = forwardRef<CandlestickChartHandle, CandlestickChartProp
             title: ann.label ?? '',
           })
         } else {
-          // Zone: render top and bottom boundary lines
+          // Zone: render top and bottom boundary lines as dotted lines.
+          // The label appears on the lower boundary line only.
           candleSeriesRef.current.createPriceLine({
             price: ann.priceMax,
             color: ann.color,
@@ -208,6 +264,9 @@ const CandlestickChart = forwardRef<CandlestickChartHandle, CandlestickChartProp
     }, [annotations])
 
     // ── ResizeObserver ────────────────────────────────────────────────────
+    // Watches the container div and updates the chart canvas dimensions when the
+    // container is resized (sidebar toggle, window resize, responsive layout shifts).
+    // The empty dep array means this runs once on mount and cleans up on unmount.
     useEffect(() => {
       if (!containerRef.current) return
 
@@ -222,12 +281,20 @@ const CandlestickChart = forwardRef<CandlestickChartHandle, CandlestickChartProp
     }, [])
 
     // ── Imperative handle ─────────────────────────────────────────────────
+    // `useImperativeHandle` defines the public API that parent components can call
+    // through the `ref` passed via forwardRef. Without this, the ref would point to
+    // the raw DOM node with no useful methods.
+    //
+    // `scrollToTime` centers the chart's visible range on a given Unix timestamp.
+    // It preserves the current zoom level by computing the visible range width and
+    // re-centering the same window on the target timestamp.
     useImperativeHandle(ref, () => ({
       scrollToTime: (timestamp: number) => {
         const ts = chartRef.current?.timeScale()
         if (!ts) return
         const range = ts.getVisibleRange()
         if (range) {
+          // Compute half-width of the current visible range and center on the target.
           const half = ((range.to as number) - (range.from as number)) / 2
           ts.setVisibleRange({
             from: (timestamp - half) as Time,

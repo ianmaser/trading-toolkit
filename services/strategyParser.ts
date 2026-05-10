@@ -1,25 +1,53 @@
+// `generateObject` is part of the Vercel AI SDK. Unlike `generateText` (which returns
+// a free-form string), `generateObject` instructs the model to output valid JSON that
+// conforms to a Zod schema. The SDK validates the model's output against the schema
+// and retries automatically if validation fails. The result is a fully typed object —
+// no manual JSON.parse or validation required on our side.
 import { generateObject } from 'ai'
+// The Anthropic provider adapter for the Vercel AI SDK.
+// `anthropic('claude-sonnet-4.6')` creates a model handle that `generateObject` uses.
 import { anthropic } from '@ai-sdk/anthropic'
+// Zod is a schema validation library. Here it serves two purposes:
+//   1. Documents the exact JSON structure Claude must output
+//   2. Validates and type-narrows the model's response at runtime
 import { z } from 'zod'
 import type { StrategyConfig } from '@/types/backtest'
 
+// This schema is the contract between us and Claude. `generateObject` uses it to:
+//   - Tell Claude what JSON structure to produce (via the schema description)
+//   - Validate that the model's output matches before returning it
+//   - Provide full TypeScript types on the returned object
+//
+// z.enum([...]) restricts valid values to the listed options — Claude cannot invent
+// a new operator or direction.
+// z.number().default(2) means "if Claude doesn't include this field, use 2.0".
+// .min(1) on the conditions array ensures Claude always outputs at least one condition.
 const strategySchema = z.object({
   conditions: z
     .array(
       z.object({
-        indicator: z.string(),
+        indicator: z.string(),   // e.g. "RSI", "HAMMER", "BOS_BULLISH"
         operator: z.enum(['>', '<', '>=', '<=', '==', 'crossover', 'crossunder']),
-        value: z.number().optional(),
-        target: z.string().optional(),
+        value: z.number().optional(),   // numeric threshold (e.g. 30 for RSI < 30)
+        target: z.string().optional(),  // second indicator for crosses (e.g. "EMA_50")
       })
     )
     .min(1),
-  take_profit_r: z.number().default(2),
+  take_profit_r: z.number().default(2),   // R-multiples relative to stop distance
   stop_loss_r: z.number().default(1),
   entry_type: z.enum(['breakout', 'pullback', 'crossover']).default('crossover'),
   direction: z.enum(['long', 'short']).default('long'),
 })
 
+// SYSTEM_PROMPT is the rules engine for the parser. It tells Claude:
+//   - Every available indicator, grouped by category
+//   - How binary indicators work (operator "==" value 1)
+//   - How to map natural language phrases to indicator names
+//   - How to set take_profit_r, stop_loss_r, direction, and entry_type
+//
+// The quality of the parser is almost entirely determined by the clarity and
+// completeness of this prompt. Adding a new indicator to the Python service means
+// adding it here too — otherwise Claude won't know to use it.
 const SYSTEM_PROMPT = `You are a trading strategy parser. Convert plain-English trading strategy descriptions into structured conditions.
 
 Available indicators by category:
@@ -80,9 +108,22 @@ Rules:
 - If the user mentions "trendline", use the appropriate trendline indicator
 - Extract as many conditions as the user specifies`
 
+// Takes a plain-English strategy description from the user and returns a fully
+// structured StrategyConfig ready to send to the Python backtest engine.
+//
+// Flow:
+//   1. `generateObject` sends the user's prompt + SYSTEM_PROMPT to Claude.
+//   2. Claude outputs JSON matching `strategySchema`.
+//   3. The AI SDK validates the JSON against the schema — if it doesn't match,
+//      the SDK retries automatically (up to a configurable limit).
+//   4. The validated, typed object is returned directly as StrategyConfig.
+//
+// Note: two known issues flagged by the build hook (not introduced here):
+//   - Model slug should be 'claude-sonnet-4.6' (dot, not hyphen)
+//   - generateObject may need migration to generateText + Output.object() in AI SDK v6
 export async function parseStrategy(prompt: string): Promise<StrategyConfig> {
   const { object } = await generateObject({
-    model: anthropic('claude-sonnet-4-6'),
+    model: anthropic('claude-sonnet-4.6'),
     schema: strategySchema,
     system: SYSTEM_PROMPT,
     prompt: `Parse this trading strategy into structured conditions: "${prompt}"`,

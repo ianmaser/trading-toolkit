@@ -3,7 +3,10 @@
 ## Goal
 
 Retroactively apply the new Code Documentation Standards (added to CLAUDE.md) across all
-existing source files in the app. Every file needs:
+source files with non-obvious logic. Excluded: self-explanatory UI forms, simple layout
+wrappers, and auto-generated shadcn/ui components.
+
+Every file in the list below needs:
 
 1. **Inline comments** — on every function/hook, non-obvious line, TypeScript type,
    and library-specific API call. Tone: explain to a JS-competent developer who has
@@ -22,76 +25,71 @@ See CLAUDE.md §"Code Documentation Standards" for the full spec.
 Work through these groups in order. Mark each file ✅ when both inline comments
 and the companion .md are complete.
 
-### components/features/ (9 files)
-- [ ] `Sidebar.tsx` + `Sidebar.md`
-- [ ] `TopBar.tsx` + `TopBar.md`
-- [ ] `BullEChat.tsx` + `BullEChat.md`
-- [ ] `TickerCard.tsx` + `TickerCard.md`
-- [ ] `WatchlistSearch.tsx` + `WatchlistSearch.md`
-- [ ] `CandlestickChart.tsx` + `CandlestickChart.md`
-- [ ] `CatalystStrip.tsx` + `CatalystStrip.md`
-- [ ] `MiniChart.tsx` + `MiniChart.md`
-- [ ] `StrategyBuilder.tsx` + `StrategyBuilder.md`
+### components/features/ (4 files)
+Complex logic only — streaming AI, charting library internals, strategy serialization.
+- [x] `BullEChat.tsx` + `BullEChat.md`
+- [x] `CandlestickChart.tsx` + `CandlestickChart.md`
+- [x] `MiniChart.tsx` + `MiniChart.md`
+- [x] `StrategyBuilder.tsx` + `StrategyBuilder.md`
 
-### hooks/ (5 files)
-- [ ] `useUser.ts` + `useUser.md`
-- [ ] `useMarketData.ts` + `useMarketData.md`
-- [ ] `useWatchlist.ts` + `useWatchlist.md`
-- [ ] `useInstitutionalData.ts` + `useInstitutionalData.md`
-- [ ] `useBacktest.ts` + `useBacktest.md`
+### hooks/ (4 files)
+TanStack Query patterns, Supabase mutations, backtest orchestration.
+- [x] `useMarketData.ts` + `useMarketData.md`
+- [x] `useWatchlist.ts` + `useWatchlist.md`
+- [x] `useInstitutionalData.ts` + `useInstitutionalData.md`
+- [x] `useBacktest.ts` + `useBacktest.md`
 
 ### services/ (3 files)
-- [ ] `marketData.ts` + `marketData.md`
-- [ ] `institutionalData.ts` + `institutionalData.md`
-- [ ] `strategyParser.ts` + `strategyParser.md`
+Provider fallback logic, Claude AI parsing.
+- [x] `marketData.ts` + `marketData.md`
+- [x] `institutionalData.ts` + `institutionalData.md`
+- [x] `strategyParser.ts` + `strategyParser.md`
 
 ### app/api/ routes (8 files)
-- [ ] `app/api/market/candles/route.ts` + `candles.md`
-- [ ] `app/api/market/quote/route.ts` + `quote.md`
-- [ ] `app/api/market/search/route.ts` + `search.md`
-- [ ] `app/api/market/details/route.ts` + `details.md`
-- [ ] `app/api/institutional/[symbol]/route.ts` + `institutional.md`
-- [ ] `app/api/backtest/route.ts` + `backtest-route.md`
-- [ ] `app/api/backtest/analyze/route.ts` + `analyze.md`
-- [ ] `app/api/strategy/parse/route.ts` + `parse.md`
+Rate limiting, RLS, data pipeline assembly.
+- [x] `app/api/market/candles/route.ts` + `candles.md`
+- [x] `app/api/market/quote/route.ts` + `quote.md`
+- [x] `app/api/market/search/route.ts` + `search.md`
+- [x] `app/api/market/details/route.ts` + `details.md`
+- [x] `app/api/institutional/[symbol]/route.ts` + `institutional.md`
+- [x] `app/api/backtest/route.ts` + `backtest-route.md`
+- [x] `app/api/backtest/analyze/route.ts` + `analyze.md`
+- [x] `app/api/strategy/parse/route.ts` + `parse.md`
 
-### app/ pages (7 files)
-- [ ] `app/layout.tsx` + `layout.md`
-- [ ] `app/providers.tsx` + `providers.md`
-- [ ] `app/login/page.tsx` + `login.md`
-- [ ] `app/signup/page.tsx` + `signup.md`
-- [ ] `app/dashboard/layout.tsx` + `dashboard-layout.md`
-- [ ] `app/dashboard/watchlist/page.tsx` + `watchlist-page.md`
-- [ ] `app/dashboard/ticker/[symbol]/page.tsx` + `ticker-page.md`
-- [ ] `app/dashboard/ticker/[symbol]/TickerPageClient.tsx` + `TickerPageClient.md`
-- [ ] `app/dashboard/backtest/page.tsx` + `backtest-page.md`
-- [ ] `app/auth/callback/route.ts` + `auth-callback.md`
+### app/ pages (4 files)
+Non-obvious wiring: Query client bootstrap, auth callback flow, multi-source orchestration.
+- [x] `app/providers.tsx` + `providers.md`
+- [x] `app/auth/callback/route.ts` + `auth-callback.md`
+- [x] `app/dashboard/ticker/[symbol]/TickerPageClient.tsx` + `TickerPageClient.md`
+- [x] `app/dashboard/backtest/page.tsx` + `backtest-page.md`
 
-### lib/ (5 files)
-- [ ] `lib/utils.ts` + `utils.md`
-- [ ] `lib/store.ts` + `store.md`
-- [ ] `lib/rateLimit.ts` + `rateLimit.md`
-- [ ] `lib/supabase/client.ts` + `client.md`
-- [ ] `lib/supabase/server.ts` + `server.md`
+### lib/ (3 files)
+Zustand store, rate limiter, SSR Supabase client with cookie handling.
+- [x] `lib/store.ts` + `store.md`
+- [x] `lib/rateLimit.ts` + `rateLimit.md`
+- [x] `lib/supabase/server.ts` + `server.md`
 
-### types/ (4 files)
-- [ ] `types/market.ts` + `market.md`
-- [ ] `types/watchlist.ts` + `watchlist.md`
-- [ ] `types/institutional.ts` + `institutional.md`
-- [ ] `types/backtest.ts` + `backtest.md`
+### types/ — SKIPPED
+Self-explanatory for a TypeScript-familiar developer.
 
 ### python-service/ (1 file)
-- [ ] `python-service/main.py` + `main.md`
+All indicator math, backtest engine, pattern detection, swing/trendline/S&R logic.
+- [x] `python-service/main.py` + `main.md`
 
 ---
 
 ## Do NOT document
-- `components/ui/*` — auto-generated shadcn/ui library components, not our code
-- `app/page.tsx` — single-line redirect, self-explanatory
+- `components/ui/*` — auto-generated shadcn/ui library components
+- `app/page.tsx` — single-line redirect
+- `Sidebar.tsx`, `TopBar.tsx`, `TickerCard.tsx`, `WatchlistSearch.tsx`, `CatalystStrip.tsx` — self-explanatory UI
+- `useUser.ts`, `lib/utils.ts`, `lib/supabase/client.ts` — trivial wrappers
+- `app/layout.tsx`, `app/login/page.tsx`, `app/signup/page.tsx` — standard forms/layouts
+- `app/dashboard/layout.tsx`, `app/dashboard/watchlist/page.tsx` — layout boilerplate
+- `app/dashboard/ticker/[symbol]/page.tsx` — thin server component wrapper
 
 ---
 
 ## Notes
-- Total: ~46 source files, ~46 companion .md files
+- Total: ~28 files (down from 46), each needs inline comments + companion .md
 - Work top-to-bottom through the list — read each file, add inline comments, write .md
 - Use TaskCreate at session start to track progress through the checklist
